@@ -1,0 +1,32 @@
+{
+  "name": "three",
+  "description": "JavaScript 3D library",
+  "version": "67.0.0",
+  "homepage": "http://threejs.org/",
+  "author": "three.js contributors",
+  "help": {
+    "web": "http://stackoverflow.com/questions/tagged/three.js"
+  },
+  "devDependencies": {
+    "uglify-js2": "*",
+    "argparse": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mrdoob/three.js.git"
+  },
+  "licenses": [
+    {
+      "type": "The MIT License",
+      "url": "https://raw.github.com/mrdoob/three.js/master/LICENSE"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/mrdoob/three.js/issues"
+  },
+  "main": "./build/three.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC"
+}

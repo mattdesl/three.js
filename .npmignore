@@ -1,0 +1,6 @@
+docs/**
+build/three.min.js
+examples/**
+src/**
+test/**
+utils/**
