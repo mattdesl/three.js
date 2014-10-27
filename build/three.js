@@ -18142,6 +18142,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
+	this.resetAttributes = function () {
+		for ( var i = 0; i < _enabledAttributes.length; i ++ ) {
+			_enabledAttributes[ i ] = 0;
+		}
+	};
+	
 	// Clearing
 
 	this.setClearColor = function ( color, alpha ) {
@@ -20794,6 +20800,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		}
 
 	}
+
 
 	function setupMorphTargets ( material, geometryGroup, object ) {
 
