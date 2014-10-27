@@ -64,11 +64,19 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.minPolarAngle = 0; // radians
 	this.maxPolarAngle = Math.PI; // radians
 
+	// How far you can orbit horizontally, upper and lower limits.
+	// If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].
+	this.minAzimuthAngle = - Infinity; // radians
+	this.maxAzimuthAngle = Infinity; // radians
+
 	// Set to true to disable use of the keys
 	this.noKeys = false;
 
 	// The four arrow keys
 	this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+
+	// Mouse buttons
+	this.mouseButtons = { ORBIT: THREE.MOUSE.LEFT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.RIGHT };
 
 	////////////
 	// internals
@@ -98,6 +106,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	var pan = new THREE.Vector3();
 
 	var lastPosition = new THREE.Vector3();
+	var lastQuaternion = new THREE.Quaternion();
 
 	var STATE = { NONE : -1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
 
@@ -254,6 +263,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 		theta += thetaDelta;
 		phi += phiDelta;
 
+		// restrict theta to be between desired limits
+		theta = Math.max( this.minAzimuthAngle, Math.min( this.maxAzimuthAngle, theta ) );
+
 		// restrict phi to be between desired limits
 		phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
 
@@ -284,11 +296,17 @@ THREE.OrbitControls = function ( object, domElement ) {
 		scale = 1;
 		pan.set( 0, 0, 0 );
 
-		if ( lastPosition.distanceToSquared( this.object.position ) > EPS ) {
+		// update condition is:
+		// min(camera displacement, camera rotation in radians)^2 > EPS
+		// using small-angle approximation cos(x/2) = 1 - x^2 / 8
+
+		if ( lastPosition.distanceToSquared( this.object.position ) > EPS
+		    || 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS ) {
 
 			this.dispatchEvent( changeEvent );
 
 			lastPosition.copy( this.object.position );
+			lastQuaternion.copy (this.object.quaternion );
 
 		}
 
@@ -323,21 +341,21 @@ THREE.OrbitControls = function ( object, domElement ) {
 		if ( scope.enabled === false ) return;
 		event.preventDefault();
 
-		if ( event.button === 0 ) {
+		if ( event.button === scope.mouseButtons.ORBIT ) {
 			if ( scope.noRotate === true ) return;
 
 			state = STATE.ROTATE;
 
 			rotateStart.set( event.clientX, event.clientY );
 
-		} else if ( event.button === 1 ) {
+		} else if ( event.button === scope.mouseButtons.ZOOM ) {
 			if ( scope.noZoom === true ) return;
 
 			state = STATE.DOLLY;
 
 			dollyStart.set( event.clientX, event.clientY );
 
-		} else if ( event.button === 2 ) {
+		} else if ( event.button === scope.mouseButtons.PAN ) {
 			if ( scope.noPan === true ) return;
 
 			state = STATE.PAN;
@@ -346,8 +364,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		}
 
-		scope.domElement.addEventListener( 'mousemove', onMouseMove, false );
-		scope.domElement.addEventListener( 'mouseup', onMouseUp, false );
+		document.addEventListener( 'mousemove', onMouseMove, false );
+		document.addEventListener( 'mouseup', onMouseUp, false );
 		scope.dispatchEvent( startEvent );
 
 	}
@@ -415,8 +433,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		if ( scope.enabled === false ) return;
 
-		scope.domElement.removeEventListener( 'mousemove', onMouseMove, false );
-		scope.domElement.removeEventListener( 'mouseup', onMouseUp, false );
+		document.removeEventListener( 'mousemove', onMouseMove, false );
+		document.removeEventListener( 'mouseup', onMouseUp, false );
 		scope.dispatchEvent( endEvent );
 		state = STATE.NONE;
 

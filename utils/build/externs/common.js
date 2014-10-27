@@ -1,3 +1,4 @@
+var AudioContext;
 var console;
-var JSON;
 var module;
+var JSON;

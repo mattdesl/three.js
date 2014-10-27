@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
 			body {
-				color: #000;
+				color: #fff;
 				font-family:Monospace;
 				font-size:13px;
 				text-align:center;
@@ -64,7 +64,7 @@
 				scene.add ( new THREE.AmbientLight( 0xaaaaaa ) );
 
 				var light = new THREE.DirectionalLight( 0xffffff, 1.5 );
-				light.position = new THREE.Vector3( 0, 0, 1000.0 );
+				light.position.set( 0, 0, 1000 );
 				scene.add( light );
 
 				renderer = new THREE.WebGLRenderer( { antialias: true, alpha: false } );
