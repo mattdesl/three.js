@@ -1,5 +1,5 @@
 {
-  "name": "three.js",
+  "name": "three",
   "version": "70.0.0-dev",
   "description": "three.js ========",
   "main": "build/three.js",
