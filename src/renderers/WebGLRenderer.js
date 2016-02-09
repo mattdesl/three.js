@@ -162,7 +162,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			preserveDrawingBuffer: _preserveDrawingBuffer
 		};
 
-		_gl = _context || _canvas.getContext( 'webgl', attributes ) || _canvas.getContext( 'experimental-webgl', attributes );
+		_gl = _context || _canvas.getContext( 'webgl2', attributes ) || _canvas.getContext( 'experimental-webgl2', attributes );
 
 		if ( _gl === null ) {
 
