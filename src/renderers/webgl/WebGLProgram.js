@@ -284,7 +284,7 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' float;',
 				'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + material.__webglShader.name,
+				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
 
 				customDefines,
 
@@ -392,7 +392,7 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' float;',
 				'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + material.__webglShader.name,
+				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
 
 				customDefines,
 
@@ -457,8 +457,13 @@ THREE.WebGLProgram = ( function () {
 		var vertexGlsl = prefixVertex + vertexShader;
 		var fragmentGlsl = prefixFragment + fragmentShader;
 
-		// console.log( '*VERTEX*', vertexGlsl );
-		// console.log( '*FRAGMENT*', fragmentGlsl );
+		if (typeof renderer.transformGLSL === 'function') {
+			var result = renderer.transformGLSL(vertexGlsl, fragmentGlsl);
+			if (result) {
+				vertexGlsl = result.vertexShader;
+				fragmentGlsl = result.fragmentShader;
+			}
+		}
 
 		var glVertexShader = THREE.WebGLShader( gl, gl.VERTEX_SHADER, vertexGlsl );
 		var glFragmentShader = THREE.WebGLShader( gl, gl.FRAGMENT_SHADER, fragmentGlsl );

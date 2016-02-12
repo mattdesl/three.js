@@ -63,6 +63,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	// flags
 
 	this.autoScaleCubemaps = true;
+	this.transformGLSL = parameters.transformGLSL;
 
 	// internal properties
 
