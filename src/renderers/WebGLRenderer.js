@@ -2843,6 +2843,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 			_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_S, paramThreeToGL( texture.wrapS ) );
 			_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_T, paramThreeToGL( texture.wrapT ) );
 
+			if ( texture instanceof THREE.Texture3D ) {
+				_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_R, paramThreeToGL( texture.wrapR ) );
+			}
+
 			_gl.texParameteri( textureType, _gl.TEXTURE_MAG_FILTER, paramThreeToGL( texture.magFilter ) );
 			_gl.texParameteri( textureType, _gl.TEXTURE_MIN_FILTER, paramThreeToGL( texture.minFilter ) );
 
@@ -2886,6 +2890,17 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function getTextureTarget ( texture ) {
+		var textureTarget = _gl.TEXTURE_2D;
+		if ( texture instanceof THREE.Texture3D ) {
+			if ( !_isWebGL2 ) {
+				throw new Error('3D Textures are only supported in WebGL2 contexts.');
+			}
+			textureTarget = _gl.TEXTURE_3D;
+		}
+		return textureTarget;
+	}
+
 	function uploadTexture( textureProperties, texture, slot ) {
 
 		if ( textureProperties.__webglInit === undefined ) {
@@ -2900,8 +2915,9 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
+		var textureTarget = getTextureTarget( texture );
 		state.activeTexture( _gl.TEXTURE0 + slot );
-		state.bindTexture( _gl.TEXTURE_2D, textureProperties.__webglTexture );
+		state.bindTexture( textureTarget, textureProperties.__webglTexture );
 
 		_gl.pixelStorei( _gl.UNPACK_FLIP_Y_WEBGL, texture.flipY );
 		_gl.pixelStorei( _gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, texture.premultiplyAlpha );
@@ -2919,7 +2935,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		glFormat = paramThreeToGL( texture.format ),
 		glType = paramThreeToGL( texture.type );
 
-		setTextureParameters( _gl.TEXTURE_2D, texture, isPowerOfTwoImage );
+		setTextureParameters( textureTarget, texture, isPowerOfTwoImage );
 
 		var mipmap, mipmaps = texture.mipmaps;
 
@@ -2972,6 +2988,34 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			}
 
+		} else if ( texture instanceof THREE.Texture3D ) {
+
+			// WebGL2 only cube texture
+			if (!_isWebGL2) {
+				throw new Error('3D Textures are only supported in WebGL2 contexts.');
+			}
+
+			if ( mipmaps.length > 0 ) { // WebGL2 supports NPOT mipmapping
+
+				for ( var i = 0, il = mipmaps.length; i < il; i ++ ) {
+
+					mipmap = mipmaps[ i ];
+					state.texImage3D( _gl.TEXTURE_3D, i, glFormat, mipmap.width, mipmap.height, mipmap.depth, 0, glFormat, glType, mipmap.data );
+
+				}
+
+				texture.generateMipmaps = false;
+
+			} else {
+
+				// Chrome fails if internal format is RGB or RGBA
+				var internalFormat = _gl.RGB32F;
+				if ( texture.format === THREE.RGBAFormat ) {
+					internalFormat = _gl.RGBA32F;
+				}
+				state.texImage3D( _gl.TEXTURE_3D, 0, internalFormat, image.width, image.height, image.depth, 0, _gl.RGB, glType, image.data );
+
+			}
 		} else {
 
 			// regular Texture (image, video, canvas)
@@ -2999,7 +3043,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		if ( texture.generateMipmaps && isPowerOfTwoImage ) _gl.generateMipmap( _gl.TEXTURE_2D );
+		if ( texture.generateMipmaps && isPowerOfTwoImage ) _gl.generateMipmap( textureTarget );
 
 		textureProperties.__version = texture.version;
 
@@ -3036,7 +3080,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		}
 
 		state.activeTexture( _gl.TEXTURE0 + slot );
-		state.bindTexture( _gl.TEXTURE_2D, textureProperties.__webglTexture );
+		state.bindTexture( getTextureTarget( texture ), textureProperties.__webglTexture );
 
 	};
 
