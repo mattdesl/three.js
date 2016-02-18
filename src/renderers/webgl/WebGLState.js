@@ -184,7 +184,6 @@ THREE.WebGLState = function ( gl, extensions, paramThreeToGL ) {
 				var formats = gl.getParameter( gl.COMPRESSED_TEXTURE_FORMATS );
 
 				for ( var i = 0; i < formats.length; i ++ ) {
-
 					compressedTextureFormats.push( formats[ i ] );
 
 				}
