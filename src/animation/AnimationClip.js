@@ -231,7 +231,7 @@ Object.assign( THREE.AnimationClip, {
 
 		var addNonemptyTrack = function(
 				trackType, trackName, animationKeys, propertyName, destTracks ) {
-
+			console.log('Adding track', trackName, propertyName)
 			// only return track if there are actually keys.
 			if ( animationKeys.length !== 0 ) {
 
@@ -316,7 +316,6 @@ Object.assign( THREE.AnimationClip, {
 				// ...assume skeletal animation
 
 				var boneName = '.bones[' + bones[ h ].name + ']';
-
 				addNonemptyTrack(
 						THREE.VectorKeyframeTrack, boneName + '.position',
 						animationKeys, 'pos', tracks );

@@ -273,7 +273,6 @@ THREE.EventDispatcher.prototype.apply( THREE.AnimationMixer.prototype );
 
 THREE.AnimationMixer._Action =
 		function( mixer, clip, localRoot ) {
-
 	this._mixer = mixer;
 	this._clip = clip;
 	this._localRoot = localRoot || null;

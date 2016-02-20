@@ -12548,7 +12548,7 @@ Object.assign( THREE.AnimationClip, {
 
 		var addNonemptyTrack = function(
 				trackType, trackName, animationKeys, propertyName, destTracks ) {
-
+			console.log('Adding track', trackName, propertyName)
 			// only return track if there are actually keys.
 			if ( animationKeys.length !== 0 ) {
 
@@ -12633,7 +12633,6 @@ Object.assign( THREE.AnimationClip, {
 				// ...assume skeletal animation
 
 				var boneName = '.bones[' + bones[ h ].name + ']';
-
 				addNonemptyTrack(
 						THREE.VectorKeyframeTrack, boneName + '.position',
 						animationKeys, 'pos', tracks );
@@ -12942,7 +12941,6 @@ THREE.EventDispatcher.prototype.apply( THREE.AnimationMixer.prototype );
 
 THREE.AnimationMixer._Action =
 		function( mixer, clip, localRoot ) {
-
 	this._mixer = mixer;
 	this._clip = clip;
 	this._localRoot = localRoot || null;
@@ -18307,7 +18305,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceColor ) {
+					if ( colors && hasFaceColor ) {
 
 						colorIndex = faces[ offset ++ ];
 						hex = colors[ colorIndex ];
@@ -18318,7 +18316,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceVertexColor ) {
+					if ( colors && hasFaceVertexColor ) {
 
 						for ( i = 0; i < 4; i ++ ) {
 
@@ -18409,7 +18407,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceColor ) {
+					if ( colors && hasFaceColor ) {
 
 						colorIndex = faces[ offset ++ ];
 						face.color.setHex( colors[ colorIndex ] );
@@ -18417,7 +18415,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceVertexColor ) {
+					if ( colors && hasFaceVertexColor ) {
 
 						for ( i = 0; i < 3; i ++ ) {
 
@@ -27964,9 +27962,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			if ( texture.format === THREE.RGBFormat ) return _gl.SRGB8;
 			if ( texture.format === THREE.RGBAFormat ) return _gl.SRGB8_ALPHA8;
-		} else if ( texture.type === THREE.FloatType ) {
-			if ( texture.format === THREE.RGBFormat ) return _gl.RGB32F;
-			if ( texture.format === THREE.RGBAFormat ) return _gl.RGBA32F;
 		}
 		return paramThreeToGL( texture.format );
 	}
@@ -28005,6 +28000,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 		glFormat = paramThreeToGL( texture.format ),
 		glType = paramThreeToGL( texture.type ),
 		glInternalFormat = getTextureInternalFormat( texture );
+
+		if ( texture instanceof THREE.Texture3D ) {
+			if ( texture.type === THREE.FloatType ) {
+				if ( texture.format === THREE.RGBFormat ) glInternalFormat = _gl.RGB32F;
+				if ( texture.format === THREE.RGBAFormat ) glInternalFormat = _gl.RGBA32F;
+			}
+		}
 
 		setTextureParameters( textureTarget, texture, isPowerOfTwoImage );
 
@@ -31574,7 +31576,6 @@ THREE.WebGLState = function ( gl, extensions, paramThreeToGL ) {
 		}
 
 		if ( boundTexture.type !== webglType || boundTexture.texture !== webglTexture ) {
-
 			gl.bindTexture( webglType, webglTexture || emptyTexture );
 
 			boundTexture.type = webglType;

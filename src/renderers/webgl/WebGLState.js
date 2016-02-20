@@ -554,7 +554,6 @@ THREE.WebGLState = function ( gl, extensions, paramThreeToGL ) {
 		}
 
 		if ( boundTexture.type !== webglType || boundTexture.texture !== webglTexture ) {
-
 			gl.bindTexture( webglType, webglTexture || emptyTexture );
 
 			boundTexture.type = webglType;

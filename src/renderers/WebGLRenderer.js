@@ -2939,9 +2939,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			if ( texture.format === THREE.RGBFormat ) return _gl.SRGB8;
 			if ( texture.format === THREE.RGBAFormat ) return _gl.SRGB8_ALPHA8;
-		} else if ( texture.type === THREE.FloatType ) {
-			if ( texture.format === THREE.RGBFormat ) return _gl.RGB32F;
-			if ( texture.format === THREE.RGBAFormat ) return _gl.RGBA32F;
 		}
 		return paramThreeToGL( texture.format );
 	}
@@ -2980,6 +2977,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 		glFormat = paramThreeToGL( texture.format ),
 		glType = paramThreeToGL( texture.type ),
 		glInternalFormat = getTextureInternalFormat( texture );
+
+		if ( texture instanceof THREE.Texture3D ) {
+			if ( texture.type === THREE.FloatType ) {
+				if ( texture.format === THREE.RGBFormat ) glInternalFormat = _gl.RGB32F;
+				if ( texture.format === THREE.RGBAFormat ) glInternalFormat = _gl.RGBA32F;
+			}
+		}
 
 		setTextureParameters( textureTarget, texture, isPowerOfTwoImage );
 

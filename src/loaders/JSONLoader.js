@@ -272,7 +272,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceColor ) {
+					if ( colors && hasFaceColor ) {
 
 						colorIndex = faces[ offset ++ ];
 						hex = colors[ colorIndex ];
@@ -283,7 +283,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceVertexColor ) {
+					if ( colors && hasFaceVertexColor ) {
 
 						for ( i = 0; i < 4; i ++ ) {
 
@@ -374,7 +374,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceColor ) {
+					if ( colors && hasFaceColor ) {
 
 						colorIndex = faces[ offset ++ ];
 						face.color.setHex( colors[ colorIndex ] );
@@ -382,7 +382,7 @@ THREE.JSONLoader.prototype = {
 					}
 
 
-					if ( hasFaceVertexColor ) {
+					if ( colors && hasFaceVertexColor ) {
 
 						for ( i = 0; i < 3; i ++ ) {
 
