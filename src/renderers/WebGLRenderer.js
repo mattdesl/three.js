@@ -2932,13 +2932,29 @@ THREE.WebGLRenderer = function ( parameters ) {
 	}
 
 	function getTextureInternalFormat ( texture ) {
-		if ( texture.sRGB ) {
-			if ( texture.type === THREE.FloatType ) {
-				throw new Error('Cannot have a FloatType sRGB texture!');
+		if ( texture.encoding === THREE.sRGBEncoding ) {
+			if ( texture.type === THREE.FloatType || texture instanceof THREE.CompressedTexture ) {
+				// Compressed and Float sRGB is not supported natively, so we let
+				// the shader handle gamma correction
+				return paramThreeToGL( texture.format );
 			}
 
-			if ( texture.format === THREE.RGBFormat ) return _gl.SRGB8;
-			if ( texture.format === THREE.RGBAFormat ) return _gl.SRGB8_ALPHA8;
+			var ext = extensions.get('EXT_sRGB');
+			if (!ext) {
+				// User does not support EXT_sRGB, we will fake it in shader
+				return paramThreeToGL( texture.format );
+			}
+
+			if ( texture.format === THREE.RGBFormat ) {
+				if (typeof _gl.SRGB8 !== 'undefined') {
+					return _gl.SRGB8; // WebGL2 can use sized internal format
+				} else {
+					return ext.SRGB_EXT; // WebGL1 + Ext can use unsized format
+				}
+			}
+			if ( texture.format === THREE.RGBAFormat ) {
+				return ext.SRGB8_ALPHA8_EXT;
+			}
 		}
 		return paramThreeToGL( texture.format );
 	}

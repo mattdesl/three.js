@@ -40,7 +40,6 @@ THREE.Texture = function ( image, mapping, wrapS, wrapT, magFilter, minFilter, f
 
 	this.version = 0;
 	this.onUpdate = null;
-	this.sRGB = false;
 
 };
 
