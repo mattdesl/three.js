@@ -272,16 +272,6 @@ THREE.WebGLProgram = ( function () {
 
 		var prefixVertex, prefixFragment;
 
-		var gammaInput = renderer.gammaInput;
-		var gammaOutput = renderer.gammaOutput;
-
-		if ( typeof material.gammaInput === 'boolean' ) {
-			gammaInput = material.gammaInput;
-		}
-		if ( typeof material.gammaOutput === 'boolean' ) {
-			gammaOutput = material.gammaOutput;
-		}
-
 		if ( material instanceof THREE.RawShaderMaterial ) {
 
 			prefixVertex = '';
@@ -300,8 +290,8 @@ THREE.WebGLProgram = ( function () {
 
 				parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
 
-				gammaInput ? '#define GAMMA_INPUT' : '',
-				gammaOutput ? '#define GAMMA_OUTPUT' : '',
+				renderer.gammaInput ? '#define GAMMA_INPUT' : '',
+				renderer.gammaOutput ? '#define GAMMA_OUTPUT' : '',
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
 
 				'#define MAX_BONES ' + parameters.maxBones,
@@ -408,21 +398,24 @@ THREE.WebGLProgram = ( function () {
 
 				parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
 
-				gammaInput ? '#define GAMMA_INPUT' : '',
-				gammaOutput ? '#define GAMMA_OUTPUT' : '',
+				renderer.gammaInput ? '#define GAMMA_INPUT' : '',
+				renderer.gammaOutput ? '#define GAMMA_OUTPUT' : '',
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
 
 				( parameters.useFog && parameters.fog ) ? '#define USE_FOG' : '',
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
+				parameters.mapEncoding ? '#define MAP_ENCODING ' + material.map.encoding : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
+				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + material.envMap.encoding : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
+				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + material.emissiveMap.encoding : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
@@ -467,6 +460,9 @@ THREE.WebGLProgram = ( function () {
 		var vertexGlsl = prefixVertex + vertexShader;
 		var fragmentGlsl = prefixFragment + fragmentShader;
 
+		vertexGlsl = THREE.WebGLShaderPreProcessor.compile( vertexGlsl );
+		fragmentGlsl = THREE.WebGLShaderPreProcessor.compile( fragmentGlsl );
+
 		if (typeof renderer.transformGLSL === 'function') {
 			var result = renderer.transformGLSL(vertexGlsl, fragmentGlsl);
 			if (result) {
@@ -474,6 +470,9 @@ THREE.WebGLProgram = ( function () {
 				fragmentGlsl = result.fragmentShader;
 			}
 		}
+
+		// console.log( '*VERTEX*', vertexGlsl );
+		// console.log( '*FRAGMENT*', fragmentGlsl );
 
 		var glVertexShader = THREE.WebGLShader( gl, gl.VERTEX_SHADER, vertexGlsl );
 		var glFragmentShader = THREE.WebGLShader( gl, gl.FRAGMENT_SHADER, fragmentGlsl );
