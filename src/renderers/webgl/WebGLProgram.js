@@ -183,6 +183,21 @@ THREE.WebGLProgram = ( function () {
 
 	}
 
+	function getEncoding ( extensions, texture ) {
+
+		if ( texture.encoding === THREE.sRGBEncoding ) {
+			var supportsSRGB = extensions.get('EXT_sRGB');
+			if ( supportsSRGB && texture.type !== THREE.FloatType && !(texture instanceof THREE.CompressedTexture) ) { // Natively support sRGB, so decode w/o correction
+				return THREE.LinearEncoding;
+			} else { // No native sRGB support, so decode with sRGB correction
+				return THREE.sRGBEncoding;
+			}
+		}
+
+		return texture.encoding;
+
+	}
+
 	return function WebGLProgram( renderer, code, material, parameters ) {
 
 		var gl = renderer.context;
@@ -406,16 +421,16 @@ THREE.WebGLProgram = ( function () {
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
-				parameters.mapEncoding ? '#define MAP_ENCODING ' + material.map.encoding : '',
+				parameters.mapEncoding ? '#define MAP_ENCODING ' + getEncoding( renderer.extensions, material.map ) : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + material.envMap.encoding : '',
+				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + getEncoding( renderer.extensions, material.envMap ) : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + material.emissiveMap.encoding : '',
+				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + getEncoding( renderer.extensions, material.emissiveMap ) : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
