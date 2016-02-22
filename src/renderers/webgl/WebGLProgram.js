@@ -183,13 +183,15 @@ THREE.WebGLProgram = ( function () {
 
 	}
 
-	function getEncoding ( extensions, texture ) {
-
+	function getEncoding ( renderer, texture ) {
 		if ( texture.encoding === THREE.sRGBEncoding ) {
-			var supportsSRGB = extensions.get('EXT_sRGB');
-			if ( supportsSRGB && texture.type !== THREE.FloatType && !(texture instanceof THREE.CompressedTexture) ) { // Natively support sRGB, so decode w/o correction
+			if ( renderer.isWebGL2
+					&& texture.type !== THREE.FloatType
+					&& !(texture instanceof THREE.CompressedTexture)  ) {
+				// We are using a true natively supported sRGB texture
 				return THREE.LinearEncoding;
-			} else { // No native sRGB support, so decode with sRGB correction
+			} else {
+				// We need to fake the sRGB in a shader
 				return THREE.sRGBEncoding;
 			}
 		}
@@ -421,16 +423,16 @@ THREE.WebGLProgram = ( function () {
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
-				parameters.mapEncoding ? '#define MAP_ENCODING ' + getEncoding( renderer.extensions, material.map ) : '',
+				parameters.mapEncoding ? '#define MAP_ENCODING ' + getEncoding( renderer, material.map ) : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + getEncoding( renderer.extensions, material.envMap ) : '',
+				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + getEncoding( renderer, material.envMap ) : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + getEncoding( renderer.extensions, material.emissiveMap ) : '',
+				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + getEncoding( renderer, material.emissiveMap ) : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',

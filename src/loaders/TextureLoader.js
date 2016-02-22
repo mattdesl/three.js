@@ -15,6 +15,7 @@ THREE.TextureLoader.prototype = {
 	load: function ( url, onLoad, onProgress, onError ) {
 
 		var texture = new THREE.Texture();
+		if (this.encoding) texture.encoding = this.encoding;
 
 		var loader = new THREE.ImageLoader( this.manager );
 		loader.setCrossOrigin( this.crossOrigin );

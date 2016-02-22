@@ -280,6 +280,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	this.extensions = extensions;
 	this.properties = properties;
 	this.state = state;
+	this.isWebGL2 = _isWebGL2;
 
 	// shadow map
 
@@ -2932,29 +2933,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 	}
 
 	function getTextureInternalFormat ( texture ) {
-		if ( texture.encoding === THREE.sRGBEncoding ) {
-			if ( texture.type === THREE.FloatType || texture instanceof THREE.CompressedTexture ) {
-				// Compressed and Float sRGB is not supported natively, so we let
-				// the shader handle gamma correction
-				return paramThreeToGL( texture.format );
-			}
-
-			var ext = extensions.get('EXT_sRGB');
-			if (!ext) {
-				// User does not support EXT_sRGB, we will fake it in shader
-				return paramThreeToGL( texture.format );
-			}
-
-			if ( texture.format === THREE.RGBFormat ) {
-				if (typeof _gl.SRGB8 !== 'undefined') {
-					return _gl.SRGB8; // WebGL2 can use sized internal format
-				} else {
-					return ext.SRGB_EXT; // WebGL1 + Ext can use unsized format
-				}
-			}
-			if ( texture.format === THREE.RGBAFormat ) {
-				return ext.SRGB8_ALPHA8_EXT;
-			}
+		if ( _isWebGL2 && texture.encoding === THREE.sRGBEncoding
+				&& texture.type !== THREE.FloatType
+				&& !(texture instanceof THREE.CompressedTexture)  ) {
+			return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
 		}
 		return paramThreeToGL( texture.format );
 	}

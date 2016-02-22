@@ -26,6 +26,7 @@ THREE.CompressedTextureLoader.prototype = {
 
 		var texture = new THREE.CompressedTexture();
 		texture.image = images;
+		if (this.encoding) texture.encoding = this.encoding;
 
 		var loader = new THREE.XHRLoader( this.manager );
 		loader.setPath( this.path );
