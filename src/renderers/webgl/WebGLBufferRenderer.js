@@ -11,6 +11,12 @@ THREE.WebGLBufferRenderer = function ( _gl, extensions, _infoRender ) {
 		mode = value;
 
 	}
+	
+	function getMode() {
+
+		return mode;
+
+	}
 
 	function render( start, count ) {
 
@@ -58,6 +64,7 @@ THREE.WebGLBufferRenderer = function ( _gl, extensions, _infoRender ) {
 	}
 
 	this.setMode = setMode;
+	this.getMode = getMode;
 	this.render = render;
 	this.renderInstances = renderInstances;
 

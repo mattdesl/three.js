@@ -49,6 +49,8 @@ THREE.Material = function () {
 	this.gammaInput = undefined; // default to renderer values
 	this.gammaOutput = undefined;
 
+	this.transformFeedback = null;
+
 };
 
 THREE.Material.prototype = {
@@ -276,6 +278,17 @@ THREE.Material.prototype = {
 
 		this.gammaInput = source.gammaInput;
 		this.gammaOutput = source.gammaOutput;
+
+		var clonedTransformFeedback = source.transformFeedback;
+
+		if ( clonedTransformFeedback ) {
+
+			clonedTransformFeedback.varyings = (source.varyings || []).slice();
+			clonedTransformFeedback.type = source.type;
+
+		}
+
+		this.transformFeedback = clonedTransformFeedback;
 
 		return this;
 

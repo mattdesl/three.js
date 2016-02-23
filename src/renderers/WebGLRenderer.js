@@ -78,6 +78,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_currentGeometryProgram = '',
 	_currentCamera = null,
 
+	_transformFeedback = null,
+
 	_currentScissor = new THREE.Vector4(),
 	_currentScissorTest = null,
 
@@ -280,6 +282,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	this.context = _gl;
 	this.capabilities = capabilities;
 	this.extensions = extensions;
+	this.objects = objects;
 	this.properties = properties;
 	this.state = state;
 	this.isWebGL2 = _isWebGL2;
@@ -407,6 +410,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 	this.setScissorTest = function ( boolean ) {
 
 		state.setScissorTest( _scissorTest = boolean );
+
+	};
+
+	this.setTransformFeedback = function ( varyings ) {
+
+		_transformFeedback = varyings;
 
 	};
 
@@ -929,6 +938,60 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
+		var isTransformFeedback = false;
+
+		if ( _isWebGL2 && _transformFeedback && _transformFeedback.length > 0 ) {
+
+			var materialProperties = properties.get( material );
+
+			if ( !materialProperties.__transformFeedback ) {
+
+				if ( !material.transformFeedback ) {
+					debugger
+					console.error('Requested transformFeedback but none set in current material.')
+				}
+
+				materialProperties.__transformFeedback = _gl.createTransformFeedback();
+
+			}
+
+			var err;
+			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, materialProperties.__transformFeedback );
+
+			for ( var i = 0; i < _transformFeedback.length; i ++ ) {
+
+				var feedbackAttrib = _transformFeedback[ i ];
+				var feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
+
+				if ( !feedbackBuffer ) {
+					objects.updateAttribute( feedbackAttrib, _gl.ARRAY_BUFFER );
+					feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
+				}
+
+				if ( feedbackBuffer ) {
+
+					isTransformFeedback = true;
+					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
+					_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, i, feedbackBuffer );
+
+				}
+
+			}
+
+			if ( isTransformFeedback ) {
+
+				_gl.enable( _gl.RASTERIZER_DISCARD );
+				_gl.beginTransformFeedback( _gl.POINTS );
+				if ((err = _gl.getError()) ) console.error("5 INVALID VALUE", err);
+
+			} else {
+
+				_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
+
+			}
+
+		}
+
 		if ( geometry instanceof THREE.InstancedBufferGeometry && geometry.maxInstancedCount > 0 ) {
 
 			renderer.renderInstances( geometry, drawStart, drawCount );
@@ -936,6 +999,15 @@ THREE.WebGLRenderer = function ( parameters ) {
 		} else {
 
 			renderer.render( drawStart, drawCount );
+
+		}
+
+		if ( isTransformFeedback ) {
+
+			_gl.endTransformFeedback();
+			_gl.disable( _gl.RASTERIZER_DISCARD );
+			_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, 0, null );
+			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
 
 		}
 
@@ -1490,7 +1562,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 					name: material.type,
 					uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
 					vertexShader: shader.vertexShader,
-					fragmentShader: shader.fragmentShader
+					fragmentShader: shader.fragmentShader,
+					transformFeedback: material.transformFeedback
 				};
 
 			} else {
@@ -1499,7 +1572,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 					name: material.type,
 					uniforms: material.uniforms,
 					vertexShader: material.vertexShader,
-					fragmentShader: material.fragmentShader
+					fragmentShader: material.fragmentShader,
+					transformFeedback: material.transformFeedback
 				};
 
 			}

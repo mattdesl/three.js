@@ -19984,6 +19984,8 @@ THREE.Material = function () {
 	this.gammaInput = undefined; // default to renderer values
 	this.gammaOutput = undefined;
 
+	this.transformFeedback = null;
+
 };
 
 THREE.Material.prototype = {
@@ -20211,6 +20213,17 @@ THREE.Material.prototype = {
 
 		this.gammaInput = source.gammaInput;
 		this.gammaOutput = source.gammaOutput;
+
+		var clonedTransformFeedback = source.transformFeedback;
+
+		if ( clonedTransformFeedback ) {
+
+			clonedTransformFeedback.varyings = (source.varyings || []).slice();
+			clonedTransformFeedback.type = source.type;
+
+		}
+
+		this.transformFeedback = clonedTransformFeedback;
 
 		return this;
 
@@ -25134,6 +25147,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_currentGeometryProgram = '',
 	_currentCamera = null,
 
+	_transformFeedback = null,
+
 	_currentScissor = new THREE.Vector4(),
 	_currentScissorTest = null,
 
@@ -25336,6 +25351,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	this.context = _gl;
 	this.capabilities = capabilities;
 	this.extensions = extensions;
+	this.objects = objects;
 	this.properties = properties;
 	this.state = state;
 	this.isWebGL2 = _isWebGL2;
@@ -25463,6 +25479,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 	this.setScissorTest = function ( boolean ) {
 
 		state.setScissorTest( _scissorTest = boolean );
+
+	};
+
+	this.setTransformFeedback = function ( varyings ) {
+
+		_transformFeedback = varyings;
 
 	};
 
@@ -25985,6 +26007,60 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
+		var isTransformFeedback = false;
+
+		if ( _isWebGL2 && _transformFeedback && _transformFeedback.length > 0 ) {
+
+			var materialProperties = properties.get( material );
+
+			if ( !materialProperties.__transformFeedback ) {
+
+				if ( !material.transformFeedback ) {
+					debugger
+					console.error('Requested transformFeedback but none set in current material.')
+				}
+
+				materialProperties.__transformFeedback = _gl.createTransformFeedback();
+
+			}
+
+			var err;
+			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, materialProperties.__transformFeedback );
+
+			for ( var i = 0; i < _transformFeedback.length; i ++ ) {
+
+				var feedbackAttrib = _transformFeedback[ i ];
+				var feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
+
+				if ( !feedbackBuffer ) {
+					objects.updateAttribute( feedbackAttrib, _gl.ARRAY_BUFFER );
+					feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
+				}
+
+				if ( feedbackBuffer ) {
+
+					isTransformFeedback = true;
+					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
+					_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, i, feedbackBuffer );
+
+				}
+
+			}
+
+			if ( isTransformFeedback ) {
+
+				_gl.enable( _gl.RASTERIZER_DISCARD );
+				_gl.beginTransformFeedback( _gl.POINTS );
+				if ((err = _gl.getError()) ) console.error("5 INVALID VALUE", err);
+
+			} else {
+
+				_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
+
+			}
+
+		}
+
 		if ( geometry instanceof THREE.InstancedBufferGeometry && geometry.maxInstancedCount > 0 ) {
 
 			renderer.renderInstances( geometry, drawStart, drawCount );
@@ -25992,6 +26068,15 @@ THREE.WebGLRenderer = function ( parameters ) {
 		} else {
 
 			renderer.render( drawStart, drawCount );
+
+		}
+
+		if ( isTransformFeedback ) {
+
+			_gl.endTransformFeedback();
+			_gl.disable( _gl.RASTERIZER_DISCARD );
+			_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, 0, null );
+			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
 
 		}
 
@@ -26546,7 +26631,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 					name: material.type,
 					uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
 					vertexShader: shader.vertexShader,
-					fragmentShader: shader.fragmentShader
+					fragmentShader: shader.fragmentShader,
+					transformFeedback: material.transformFeedback
 				};
 
 			} else {
@@ -26555,7 +26641,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 					name: material.type,
 					uniforms: material.uniforms,
 					vertexShader: material.vertexShader,
-					fragmentShader: material.fragmentShader
+					fragmentShader: material.fragmentShader,
+					transformFeedback: material.transformFeedback
 				};
 
 			}
@@ -28008,13 +28095,34 @@ THREE.WebGLRenderer = function ( parameters ) {
 	}
 
 	function getTextureInternalFormat ( texture ) {
+
 		if ( _isWebGL2 && texture.encoding === THREE.sRGBEncoding
 				&& texture.type !== THREE.FloatType
 				&& !(texture instanceof THREE.CompressedTexture)  ) {
 			return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
 		}
 		return paramThreeToGL( texture.format );
+
 	}
+
+	function getGLSLEncoding ( texture ) {
+
+		if ( texture.encoding === THREE.sRGBEncoding ) {
+			if ( _isWebGL2
+					&& texture.type !== THREE.FloatType
+					&& !(texture instanceof THREE.CompressedTexture)  ) {
+				// We are using a true natively supported sRGB texture
+				return THREE.LinearEncoding;
+			} else {
+				// We need to fake the sRGB in a shader
+				return THREE.sRGBEncoding;
+			}
+		}
+
+		return texture.encoding;
+
+	}
+
 
 	function uploadTexture( textureProperties, texture, slot ) {
 
@@ -28169,6 +28277,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( texture.onUpdate ) texture.onUpdate( texture );
 
 	}
+
+	this.getGLSLEncoding = function ( texture ) {
+		return getGLSLEncoding( texture );
+	};
 
 	this.setTexture = function ( texture, slot ) {
 
@@ -29123,6 +29235,12 @@ THREE.WebGLBufferRenderer = function ( _gl, extensions, _infoRender ) {
 		mode = value;
 
 	}
+	
+	function getMode() {
+
+		return mode;
+
+	}
 
 	function render( start, count ) {
 
@@ -29170,6 +29288,7 @@ THREE.WebGLBufferRenderer = function ( _gl, extensions, _infoRender ) {
 	}
 
 	this.setMode = setMode;
+	this.getMode = getMode;
 	this.render = render;
 	this.renderInstances = renderInstances;
 
@@ -29188,6 +29307,12 @@ THREE.WebGLIndexedBufferRenderer = function ( _gl, extensions, _infoRender ) {
 	function setMode( value ) {
 
 		mode = value;
+
+	}
+
+	function getMode() {
+
+		return mode;
 
 	}
 
@@ -29238,6 +29363,7 @@ THREE.WebGLIndexedBufferRenderer = function ( _gl, extensions, _infoRender ) {
 	}
 
 	this.setMode = setMode;
+	this.getMode = getMode;
 	this.setIndex = setIndex;
 	this.render = render;
 	this.renderInstances = renderInstances;
@@ -29824,6 +29950,7 @@ THREE.WebGLObjects = function ( gl, properties, info ) {
 	}
 
 	this.getAttributeBuffer = getAttributeBuffer;
+	this.updateAttribute = updateAttribute;
 	this.getWireframeAttribute = getWireframeAttribute;
 
 	this.update = update;
@@ -30014,23 +30141,6 @@ THREE.WebGLProgram = ( function () {
 		}
 
 		return string.replace( pattern, replace );
-
-	}
-
-	function getEncoding ( renderer, texture ) {
-		if ( texture.encoding === THREE.sRGBEncoding ) {
-			if ( renderer.isWebGL2
-					&& texture.type !== THREE.FloatType
-					&& !(texture instanceof THREE.CompressedTexture)  ) {
-				// We are using a true natively supported sRGB texture
-				return THREE.LinearEncoding;
-			} else {
-				// We need to fake the sRGB in a shader
-				return THREE.sRGBEncoding;
-			}
-		}
-
-		return texture.encoding;
 
 	}
 
@@ -30257,16 +30367,16 @@ THREE.WebGLProgram = ( function () {
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
-				parameters.mapEncoding ? '#define MAP_ENCODING ' + getEncoding( renderer, material.map ) : '',
+				parameters.mapEncoding ? '#define MAP_ENCODING ' + renderer.getGLSLEncoding( material.map ) : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + getEncoding( renderer, material.envMap ) : '',
+				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + renderer.getGLSLEncoding( material.envMap ) : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + getEncoding( renderer, material.emissiveMap ) : '',
+				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + renderer.getGLSLEncoding( material.emissiveMap ) : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
@@ -30341,6 +30451,14 @@ THREE.WebGLProgram = ( function () {
 
 			// programs with morphTargets displace position out of attribute 0
 			gl.bindAttribLocation( program, 0, 'position' );
+
+		}
+
+		var transformFeedback = material.__webglShader.transformFeedback;
+
+		if ( renderer.isWebGL2 && transformFeedback && Array.isArray(transformFeedback.varyings) ) {
+
+			gl.transformFeedbackVaryings( program, transformFeedback.varyings, transformFeedback.type || gl.SEPARATE_ATTRIBS );
 
 		}
 

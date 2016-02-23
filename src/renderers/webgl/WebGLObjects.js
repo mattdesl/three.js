@@ -218,6 +218,7 @@ THREE.WebGLObjects = function ( gl, properties, info ) {
 	}
 
 	this.getAttributeBuffer = getAttributeBuffer;
+	this.updateAttribute = updateAttribute;
 	this.getWireframeAttribute = getWireframeAttribute;
 
 	this.update = update;

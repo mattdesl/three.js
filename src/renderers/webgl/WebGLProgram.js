@@ -493,6 +493,14 @@ THREE.WebGLProgram = ( function () {
 
 		}
 
+		var transformFeedback = material.__webglShader.transformFeedback;
+
+		if ( renderer.isWebGL2 && transformFeedback && Array.isArray(transformFeedback.varyings) ) {
+
+			gl.transformFeedbackVaryings( program, transformFeedback.varyings, transformFeedback.type || gl.SEPARATE_ATTRIBS );
+
+		}
+
 		gl.linkProgram( program );
 
 		var programLog = gl.getProgramInfoLog( program );

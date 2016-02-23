@@ -12,6 +12,12 @@ THREE.WebGLIndexedBufferRenderer = function ( _gl, extensions, _infoRender ) {
 
 	}
 
+	function getMode() {
+
+		return mode;
+
+	}
+
 	var type, size;
 
 	function setIndex( index ) {
@@ -59,6 +65,7 @@ THREE.WebGLIndexedBufferRenderer = function ( _gl, extensions, _infoRender ) {
 	}
 
 	this.setMode = setMode;
+	this.getMode = getMode;
 	this.setIndex = setIndex;
 	this.render = render;
 	this.renderInstances = renderInstances;

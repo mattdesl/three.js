@@ -16,6 +16,12 @@
     "type": "git",
     "url": "https://github.com/mrdoob/three.js"
   },
+  "semistandard": {
+    "ignore": ["src/", "*.js", "src/**"]
+  },
+  "standard": {
+    "ignore": ["src/", "*.js", "src/**"]
+  },
   "keywords": [
     "three",
     "three.js",
