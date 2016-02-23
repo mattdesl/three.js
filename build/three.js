@@ -26008,15 +26008,16 @@ THREE.WebGLRenderer = function ( parameters ) {
 		}
 
 		var isTransformFeedback = false;
+		var hasBuffers = false;
 
 		if ( _isWebGL2 && _transformFeedback && _transformFeedback.length > 0 ) {
 
+			isTransformFeedback = true;
 			var materialProperties = properties.get( material );
 
 			if ( !materialProperties.__transformFeedback ) {
 
 				if ( !material.transformFeedback ) {
-					debugger
 					console.error('Requested transformFeedback but none set in current material.')
 				}
 
@@ -26036,10 +26037,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 					objects.updateAttribute( feedbackAttrib, _gl.ARRAY_BUFFER );
 					feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
 				}
-
+				
+				
 				if ( feedbackBuffer ) {
 
-					isTransformFeedback = true;
+					hasBuffers = true;
 					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
 					_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, i, feedbackBuffer );
 
@@ -26047,11 +26049,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			}
 
-			if ( isTransformFeedback ) {
+			if ( hasBuffers ) {
 
 				_gl.enable( _gl.RASTERIZER_DISCARD );
 				_gl.beginTransformFeedback( _gl.POINTS );
-				if ((err = _gl.getError()) ) console.error("5 INVALID VALUE", err);
 
 			} else {
 
@@ -26075,8 +26076,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			_gl.endTransformFeedback();
 			_gl.disable( _gl.RASTERIZER_DISCARD );
-			_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, 0, null );
-			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
+
+			if ( hasBuffers ) {
+
+				_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, 0, null );
+				_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
+
+			}
 
 		}
 
