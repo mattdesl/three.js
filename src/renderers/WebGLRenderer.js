@@ -2952,13 +2952,34 @@ THREE.WebGLRenderer = function ( parameters ) {
 	}
 
 	function getTextureInternalFormat ( texture ) {
+
 		if ( _isWebGL2 && texture.encoding === THREE.sRGBEncoding
 				&& texture.type !== THREE.FloatType
 				&& !(texture instanceof THREE.CompressedTexture)  ) {
 			return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
 		}
 		return paramThreeToGL( texture.format );
+
 	}
+
+	function getGLSLEncoding ( texture ) {
+
+		if ( texture.encoding === THREE.sRGBEncoding ) {
+			if ( _isWebGL2
+					&& texture.type !== THREE.FloatType
+					&& !(texture instanceof THREE.CompressedTexture)  ) {
+				// We are using a true natively supported sRGB texture
+				return THREE.LinearEncoding;
+			} else {
+				// We need to fake the sRGB in a shader
+				return THREE.sRGBEncoding;
+			}
+		}
+
+		return texture.encoding;
+
+	}
+
 
 	function uploadTexture( textureProperties, texture, slot ) {
 
@@ -3113,6 +3134,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( texture.onUpdate ) texture.onUpdate( texture );
 
 	}
+
+	this.getGLSLEncoding = function ( texture ) {
+		return getGLSLEncoding( texture );
+	};
 
 	this.setTexture = function ( texture, slot ) {
 

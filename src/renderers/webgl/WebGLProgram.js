@@ -183,23 +183,6 @@ THREE.WebGLProgram = ( function () {
 
 	}
 
-	function getEncoding ( renderer, texture ) {
-		if ( texture.encoding === THREE.sRGBEncoding ) {
-			if ( renderer.isWebGL2
-					&& texture.type !== THREE.FloatType
-					&& !(texture instanceof THREE.CompressedTexture)  ) {
-				// We are using a true natively supported sRGB texture
-				return THREE.LinearEncoding;
-			} else {
-				// We need to fake the sRGB in a shader
-				return THREE.sRGBEncoding;
-			}
-		}
-
-		return texture.encoding;
-
-	}
-
 	return function WebGLProgram( renderer, code, material, parameters ) {
 
 		var gl = renderer.context;
@@ -423,16 +406,16 @@ THREE.WebGLProgram = ( function () {
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
-				parameters.mapEncoding ? '#define MAP_ENCODING ' + getEncoding( renderer, material.map ) : '',
+				parameters.mapEncoding ? '#define MAP_ENCODING ' + renderer.getGLSLEncoding( material.map ) : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + getEncoding( renderer, material.envMap ) : '',
+				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + renderer.getGLSLEncoding( material.envMap ) : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + getEncoding( renderer, material.emissiveMap ) : '',
+				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + renderer.getGLSLEncoding( material.emissiveMap ) : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
