@@ -3036,12 +3036,31 @@ THREE.WebGLRenderer = function ( parameters ) {
 		return textureTarget;
 	}
 
+	function getTextureFormat ( texture ) {
+
+		if ( isSRGBTexture( texture ) ) {
+			if ( _isWebGL2 ) {
+				// WebGL2 does NOT want the SRGB flag here... :\
+				return paramThreeToGL( texture.format );
+			} else {
+				// WebGL1 wants the SRGB flag here
+				const ext = extensions.get( 'EXT_sRGB' );
+				return texture.format === THREE.RGBAFormat ? ext.SRGB_ALPHA_EXT : ext.SRGB_EXT;
+			}
+		}
+		return paramThreeToGL( texture.format );
+
+	}
+
 	function getTextureInternalFormat ( texture ) {
 
-		if ( _isWebGL2 && texture.encoding === THREE.sRGBEncoding
-				&& texture.type !== THREE.FloatType
-				&& !(texture instanceof THREE.CompressedTexture)  ) {
-			return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
+		if ( isSRGBTexture( texture ) ) {
+			if ( _isWebGL2 ) {
+				return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
+			} else {
+				const ext = extensions.get( 'EXT_sRGB' );
+				return texture.format === THREE.RGBAFormat ? ext.SRGB_ALPHA_EXT : ext.SRGB_EXT;
+			}
 		}
 		return paramThreeToGL( texture.format );
 
@@ -3050,9 +3069,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	function getGLSLEncoding ( texture ) {
 
 		if ( texture.encoding === THREE.sRGBEncoding ) {
-			if ( _isWebGL2
-					&& texture.type !== THREE.FloatType
-					&& !(texture instanceof THREE.CompressedTexture)  ) {
+			if ( isSRGBTexture( texture ) ) {
 				// We are using a true natively supported sRGB texture
 				return THREE.LinearEncoding;
 			} else {
@@ -3065,6 +3082,20 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function isSRGBTexture ( texture ) {
+
+		return texture.encoding === THREE.sRGBEncoding
+				&& supportsSRGB()
+				&& texture.type !== THREE.FloatType
+				&& !(texture instanceof THREE.CompressedTexture)
+
+	}
+
+	function supportsSRGB () {
+
+		return Boolean(extensions.get('EXT_sRGB'));
+
+	}
 
 	function uploadTexture( textureProperties, texture, slot ) {
 
@@ -3097,7 +3128,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		}
 
 		var isPowerOfTwoImage = isPowerOfTwo( image ),
-		glFormat = paramThreeToGL( texture.format ),
+		glFormat = getTextureFormat( texture ),
 		glType = paramThreeToGL( texture.type ),
 		glInternalFormat = getTextureInternalFormat( texture );
 
@@ -3363,7 +3394,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 				var image = cubeImage[ 0 ],
 				isPowerOfTwoImage = isPowerOfTwo( image ),
-				glFormat = paramThreeToGL( texture.format ),
+				glFormat = getTextureFormat( texture ),
 				glType = paramThreeToGL( texture.type ),
 				glInternalFormat = getTextureInternalFormat( texture );
 
