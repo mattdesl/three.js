@@ -544,7 +544,19 @@ THREE.JSONLoader.prototype = {
 
 		} else {
 
-			var materials = THREE.Loader.prototype.initMaterials( json.materials, texturePath, this.crossOrigin );
+			var materials;
+			if ( this.materialLoader ) {
+
+				var self = this;
+				materials = json.materials.map(function ( material ) {
+					return self.materialLoader( material, texturePath, self.crossOrigin );
+				});
+
+			} else {
+
+				materials = THREE.Loader.prototype.initMaterials( json.materials, texturePath, this.crossOrigin );
+
+			}
 
 			return { geometry: geometry, materials: materials };
 

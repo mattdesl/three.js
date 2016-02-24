@@ -958,19 +958,22 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			var err;
 			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, materialProperties.__transformFeedback );
-
+			
 			for ( var i = 0; i < _transformFeedback.length; i ++ ) {
 
 				var feedbackAttrib = _transformFeedback[ i ];
 				var feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
 
 				if ( !feedbackBuffer ) {
+
 					objects.updateAttribute( feedbackAttrib, _gl.ARRAY_BUFFER );
 					feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
+
 				}
 				
 				
 				if ( feedbackBuffer ) {
+					_gl.bindBuffer( _gl.ARRAY_BUFFER, feedbackBuffer );
 
 					hasBuffers = true;
 					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
@@ -984,6 +987,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 				_gl.enable( _gl.RASTERIZER_DISCARD );
 				_gl.beginTransformFeedback( _gl.POINTS );
+				// if ( (err = _gl.getError()) ) console.error("ERROR", err);
 
 			} else {
 
@@ -1007,6 +1011,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			_gl.endTransformFeedback();
 			_gl.disable( _gl.RASTERIZER_DISCARD );
+			// _gl.flush();
+			// _gl.finish();
 
 			if ( hasBuffers ) {
 
@@ -2331,7 +2337,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 			var location = uniforms[ j ][ 1 ];
 
 			switch ( type ) {
-
 				case '1i':
 					_gl.uniform1i( location, value );
 					break;
