@@ -18233,7 +18233,6 @@ THREE.JSONLoader.prototype = {
 				// console.log("type", type, "bits", isQuad, hasMaterial, hasFaceVertexUv, hasFaceNormal, hasFaceVertexNormal, hasFaceColor, hasFaceVertexColor);
 
 				if ( isQuad ) {
-
 					faceA = new THREE.Face3();
 					faceA.a = faces[ offset ];
 					faceA.b = faces[ offset + 1 ];
