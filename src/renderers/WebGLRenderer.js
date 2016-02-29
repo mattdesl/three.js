@@ -3049,6 +3049,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			}
 
+		} else if ( _isWebGL2 && texture.type === THREE.FloatType ) {
+
+			if ( texture.format === THREE.RGBAFormat ) return _gl.RGBA32F;
+			if ( texture.format === THREE.RGBFormat ) return _gl.RGB32F;
+
 		}
 
 		return paramThreeToGL( texture.format );
