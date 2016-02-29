@@ -7,12 +7,51 @@ THREE.WebGLProgram = ( function () {
 	var arrayStructRe = /^([\w\d_]+)\[(\d+)\]\.([\w\d_]+)$/;
 	var arrayRe = /^([\w\d_]+)\[0\]$/;
 
+	function getEncodingComponents( encoding ) {
+
+		switch ( encoding ) {
+
+			case THREE.LinearEncoding:
+				return [ 'Linear','( value )' ];
+			case THREE.sRGBEncoding:
+				return [ 'sRGB','( value )' ];
+			case THREE.RGBEEncoding:
+				return [ 'RGBE','( value )' ];
+			case THREE.RGBM7Encoding:
+				return [ 'RGBM','( value, 7.0 )' ];
+			case THREE.RGBM16Encoding:
+				return [ 'RGBM','( value, 16.0 )' ];
+			case THREE.RGBDEncoding:
+				return [ 'RGBD','( value, 256.0 )' ];
+			case THREE.GammaEncoding:
+				return [ 'Gamma','( value, float( GAMMA_FACTOR ) )' ];
+			default:
+				throw new Error( 'unsupported encoding: ' + encoding );
+
+		}
+
+	}
+
+	function getTexelDecodingFunction( functionName, encoding ) {
+
+		var components = getEncodingComponents( encoding );
+		return "vec4 " + functionName + "( vec4 value ) { return " + components[ 0 ] + "ToLinear" + components[ 1 ] + "; }";
+
+	}
+
+	function getTexelEncodingFunction( functionName, encoding ) {
+
+		var components = getEncodingComponents( encoding );
+		return "vec4 " + functionName + "( vec4 value ) { return LinearTo" + components[ 0 ] + components[ 1 ] + "; }";
+
+	}
+
 	function generateExtensions( extensions, parameters, rendererExtensions ) {
 
 		extensions = extensions || {};
 
 		var chunks = [
-			( extensions.derivatives || parameters.bumpMap || parameters.normalMap || parameters.flatShading ) ? '#extension GL_OES_standard_derivatives : enable' : '',
+			( extensions.derivatives || parameters.envMapCubeUV || parameters.bumpMap || parameters.normalMap || parameters.flatShading ) ? '#extension GL_OES_standard_derivatives : enable' : '',
 			( extensions.fragDepth || parameters.logarithmicDepthBuffer ) && rendererExtensions.get( 'EXT_frag_depth' ) ? '#extension GL_EXT_frag_depth : enable' : '',
 			( extensions.drawBuffers ) && rendererExtensions.get( 'WEBGL_draw_buffers' ) ? '#extension GL_EXT_draw_buffers : require' : '',
 			( extensions.shaderTextureLOD || parameters.envMap ) && rendererExtensions.get( 'EXT_shader_texture_lod' ) ? '#extension GL_EXT_shader_texture_lod : enable' : '',
@@ -161,6 +200,28 @@ THREE.WebGLProgram = ( function () {
 
 	}
 
+	function parseIncludes( string ) {
+
+		var pattern = /#include +<([\w\d.]+)>/g;
+
+		function replace( match, include ) {
+
+			var replace = THREE.ShaderChunk[ include ];
+
+			if ( replace === undefined ) {
+
+				throw new Error( 'Can not resolve #include <' + include + '>' );
+
+			}
+
+			return parseIncludes( replace );
+
+		}
+
+		return string.replace( pattern, replace );
+
+	}
+
 	function unrollLoops( string ) {
 
 		var pattern = /for \( int i \= (\d+)\; i < (\d+)\; i \+\+ \) \{([\s\S]+?)(?=\})\}/g;
@@ -216,6 +277,11 @@ THREE.WebGLProgram = ( function () {
 				case THREE.CubeReflectionMapping:
 				case THREE.CubeRefractionMapping:
 					envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
+					break;
+
+				case THREE.CubeUVReflectionMapping:
+				case THREE.CubeUVRefractionMapping:
+					envMapTypeDefine = 'ENVMAP_TYPE_CUBE_UV';
 					break;
 
 				case THREE.EquirectangularReflectionMapping:
@@ -290,8 +356,6 @@ THREE.WebGLProgram = ( function () {
 
 				parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
 
-				renderer.gammaInput ? '#define GAMMA_INPUT' : '',
-				renderer.gammaOutput ? '#define GAMMA_OUTPUT' : '',
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
 
 				'#define MAX_BONES ' + parameters.maxBones,
@@ -384,7 +448,6 @@ THREE.WebGLProgram = ( function () {
 
 			].filter( filterEmptyLine ).join( '\n' );
 
-
 			prefixFragment = [
 
 				customExtensions,
@@ -398,24 +461,19 @@ THREE.WebGLProgram = ( function () {
 
 				parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
 
-				renderer.gammaInput ? '#define GAMMA_INPUT' : '',
-				renderer.gammaOutput ? '#define GAMMA_OUTPUT' : '',
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
 
 				( parameters.useFog && parameters.fog ) ? '#define USE_FOG' : '',
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',
 
 				parameters.map ? '#define USE_MAP' : '',
-				parameters.mapEncoding ? '#define MAP_ENCODING ' + renderer.getGLSLEncoding( material.map ) : '',
 				parameters.envMap ? '#define USE_ENVMAP' : '',
 				parameters.envMap ? '#define ' + envMapTypeDefine : '',
 				parameters.envMap ? '#define ' + envMapModeDefine : '',
 				parameters.envMap ? '#define ' + envMapBlendingDefine : '',
-				parameters.envMapEncoding ? '#define ENVMAP_ENCODING ' + renderer.getGLSLEncoding( material.envMap ) : '',
 				parameters.lightMap ? '#define USE_LIGHTMAP' : '',
 				parameters.aoMap ? '#define USE_AOMAP' : '',
 				parameters.emissiveMap ? '#define USE_EMISSIVEMAP' : '',
-				parameters.emissiveMapEncoding ? '#define EMISSIVEMAP_ENCODING ' + renderer.getGLSLEncoding( material.emissiveMap ) : '',
 				parameters.bumpMap ? '#define USE_BUMPMAP' : '',
 				parameters.normalMap ? '#define USE_NORMALMAP' : '',
 				parameters.specularMap ? '#define USE_SPECULARMAP' : '',
@@ -441,13 +499,23 @@ THREE.WebGLProgram = ( function () {
 				'uniform mat4 viewMatrix;',
 				'uniform vec3 cameraPosition;',
 
+				( parameters.outputEncoding || parameters.mapEncoding || parameters.envMapEncoding || parameters.emissiveMapEncoding ) ? THREE.ShaderChunk[ 'encodings' ] : '',
+
+				parameters.mapEncoding ? getTexelDecodingFunction( 'mapTexelToLinear', parameters.mapEncoding ) : '',
+				parameters.envMapEncoding ? getTexelDecodingFunction( 'envMapTexelToLinear', parameters.envMapEncoding ) : '',
+				parameters.emissiveMapEncoding ? getTexelDecodingFunction( 'emissiveMapTexelToLinear', parameters.emissiveMapEncoding ) : '',
+				parameters.outputEncoding ? getTexelEncodingFunction( "linearToOutputTexel", parameters.outputEncoding ) : '',
+
 				'\n'
 
 			].filter( filterEmptyLine ).join( '\n' );
 
 		}
 
+		vertexShader = parseIncludes( vertexShader, parameters );
 		vertexShader = replaceLightNums( vertexShader, parameters );
+
+		fragmentShader = parseIncludes( fragmentShader, parameters );
 		fragmentShader = replaceLightNums( fragmentShader, parameters );
 
 		if ( material instanceof THREE.ShaderMaterial === false ) {
