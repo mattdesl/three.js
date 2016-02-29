@@ -58,11 +58,6 @@ THREE.WebGLState = function ( gl, extensions, paramThreeToGL ) {
 	var currentScissor = new THREE.Vector4();
 	var currentViewport = new THREE.Vector4();
 
-	var emptyTexture = gl.createTexture();
-	gl.bindTexture( gl.TEXTURE_2D, emptyTexture );
-	gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
-	gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array( 3 ) );
-
 	this.init = function () {
 
 		this.clearColor( 0, 0, 0, 1 );
@@ -554,7 +549,7 @@ THREE.WebGLState = function ( gl, extensions, paramThreeToGL ) {
 		}
 
 		if ( boundTexture.type !== webglType || boundTexture.texture !== webglTexture ) {
-			gl.bindTexture( webglType, webglTexture || emptyTexture );
+			gl.bindTexture( webglType, webglTexture || null );
 
 			boundTexture.type = webglType;
 			boundTexture.texture = webglTexture;
