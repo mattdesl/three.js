@@ -357,6 +357,7 @@ THREE.WebGLProgram = ( function () {
 				parameters.supportsVertexTextures ? '#define VERTEX_TEXTURES' : '',
 
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+				renderer.isWebGL2 ? '#define WEBGL2' : '',
 
 				'#define MAX_BONES ' + parameters.maxBones,
 
@@ -462,6 +463,7 @@ THREE.WebGLProgram = ( function () {
 				parameters.alphaTest ? '#define ALPHATEST ' + parameters.alphaTest : '',
 
 				'#define GAMMA_FACTOR ' + gammaFactorDefine,
+				renderer.isWebGL2 ? '#define WEBGL2' : '',
 
 				( parameters.useFog && parameters.fog ) ? '#define USE_FOG' : '',
 				( parameters.useFog && parameters.fogExp ) ? '#define FOG_EXP2' : '',

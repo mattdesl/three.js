@@ -3445,7 +3445,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 					}
 
 				}
-
+				
 				if ( texture.generateMipmaps && isPowerOfTwoImage ) {
 
 					_gl.generateMipmap( _gl.TEXTURE_CUBE_MAP );
