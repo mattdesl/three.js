@@ -3029,13 +3029,20 @@ THREE.WebGLRenderer = function ( parameters ) {
 	function getTextureInternalFormat ( texture ) {
 
 		if ( isSRGBTexture( texture ) ) {
+
 			if ( _isWebGL2 ) {
+
 				return texture.format === THREE.RGBAFormat ? _gl.SRGB8_ALPHA8 : _gl.SRGB8;
+
 			} else {
+
 				const ext = extensions.get( 'EXT_sRGB' );
 				return texture.format === THREE.RGBAFormat ? ext.SRGB_ALPHA_EXT : ext.SRGB_EXT;
+
 			}
+
 		}
+
 		return paramThreeToGL( texture.format );
 
 	}
@@ -3043,13 +3050,19 @@ THREE.WebGLRenderer = function ( parameters ) {
 	function getGLSLEncoding ( texture ) {
 
 		if ( texture.encoding === THREE.sRGBEncoding ) {
+
 			if ( isSRGBTexture( texture ) ) {
+
 				// We are using a true natively supported sRGB texture
 				return THREE.LinearEncoding;
+
 			} else {
+
 				// We need to fake the sRGB in a shader
 				return THREE.sRGBEncoding;
+
 			}
+
 		}
 
 		return texture.encoding;

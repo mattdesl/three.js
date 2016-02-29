@@ -75,13 +75,17 @@ THREE.WebGLPrograms = function ( renderer, capabilities ) {
 
 			encoding = THREE.LinearEncoding;
 
-		} else if ( map instanceof THREE.Texture ) {
+		} else {
 
-			encoding = map.encoding;
+			var tex = map;
 
-		} else if ( map instanceof THREE.WebGLRenderTarget ) {
+			if ( map instanceof THREE.WebGLRenderTarget ) {
 
-			encoding = map.texture.encoding;
+				tex = map.texture;
+
+			}
+
+			encoding = renderer.getGLSLEncoding( tex );
 
 		}
 
