@@ -2960,8 +2960,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 			_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_S, paramThreeToGL( texture.wrapS ) );
 			_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_T, paramThreeToGL( texture.wrapT ) );
 
-			if ( texture instanceof THREE.Texture3D ) {
-				_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_R, paramThreeToGL( texture.wrapR ) );
+			if ( texture instanceof THREE.Texture3D || ( _isWebGL2 && texture instanceof THREE.CubeTexture ) ) {
+				_gl.texParameteri( textureType, _gl.TEXTURE_WRAP_R, paramThreeToGL( texture.wrapR || texture.wrapS ) );
 			}
 
 			_gl.texParameteri( textureType, _gl.TEXTURE_MAG_FILTER, paramThreeToGL( texture.magFilter ) );
@@ -3098,6 +3098,16 @@ THREE.WebGLRenderer = function ( parameters ) {
 	}
 
 	function uploadTexture( textureProperties, texture, slot ) {
+
+		if ( texture.image ) {
+
+			console.log('Uplaoding texture', texture.image.src);
+
+		} else {
+
+			console.log('Uploading data texture');
+
+		}
 
 		if ( textureProperties.__webglInit === undefined ) {
 
@@ -3255,6 +3265,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 		return getGLSLEncoding( texture );
 	};
 
+	this.setCubeTexture = function ( cubeTexture, slot ) {
+		setCubeTexture( cubeTexture, slot );
+	};
+
 	this.setTexture = function ( texture, slot ) {
 
 		var textureProperties = properties.get( texture );
@@ -3402,7 +3416,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 				for ( var i = 0; i < 6; i ++ ) {
 
-					if ( ! isCompressed ) {
+					if ( ! isCompressed && !cubeImage[ i ].mipmaps ) {
 
 						if ( isDataTexture ) {
 
@@ -3445,7 +3459,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 					}
 
 				}
-				
+
 				if ( texture.generateMipmaps && isPowerOfTwoImage ) {
 
 					_gl.generateMipmap( _gl.TEXTURE_CUBE_MAP );
@@ -3619,7 +3633,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		var internalFormat; // let it default to glFormat unless MSAA is enabled
+		var internalFormat; // let it default to glFormat unless WebGL2
+		if ( _isWebGL2 ) {
+
+			internalFormat = getTextureInternalFormat( renderTarget.texture );
+
+		}
 
 		// The WebGLMultisampleRenderTarget internally contains
 		// a color + depth renderbuffer. The render target holds
