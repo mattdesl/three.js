@@ -103,19 +103,19 @@ IncidentLight directLight;
 
 	#if defined( USE_ENVMAP ) && defined( STANDARD )
 
-		// TODO, replace 8 with the real maxMIPLevel
-	 	irradiance += getLightProbeIndirectIrradiance( /*lightProbe,*/ geometry, 8 );
+		// TODO, replace 9 with the real maxMIPLevel
+	 	irradiance += getLightProbeIndirectIrradiance( /*lightProbe,*/ geometry, 9 );
 
 	#endif
 
-	// RE_IndirectDiffuse( irradiance, geometry, material, reflectedLight );
+	RE_IndirectDiffuse( irradiance, geometry, material, reflectedLight );
 
 #endif
 
 #if defined( USE_ENVMAP ) && defined( RE_IndirectSpecular )
 
-	// TODO, replace 8 with the real maxMIPLevel
-	vec3 radiance = getLightProbeIndirectRadiance( /*specularLightProbe,*/ geometry, Material_BlinnShininessExponent( material ), 8 );
+	// TODO, replace 9 with the real maxMIPLevel
+	vec3 radiance = getLightProbeIndirectRadiance( /*specularLightProbe,*/ geometry, Material_BlinnShininessExponent( material ), 9 );
 
 	RE_IndirectSpecular( radiance, geometry, material, reflectedLight );
 
