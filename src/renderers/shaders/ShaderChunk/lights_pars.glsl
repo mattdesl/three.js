@@ -195,9 +195,16 @@
 		return PI * envMapColor.rgb * envMapIntensity;
 
 	}
+	
+	// taken from Unreal Engine 4
+	float getSpecularMIPLevel( float roughness, int mipCount ){
+			// level starting from 1x1 mip
+			float level = 3.0 - 1.15 * log2( roughness );
+			return float(mipCount) - 1.0 - level;
+	}
 
 	// taken from here: http://casual-effects.blogspot.ca/2011/08/plausible-environment-lighting-in-two.html
-	float getSpecularMIPLevel( const in float blinnShininessExponent, const in int maxMIPLevel ) {
+	float getSpecularMIPLevel2( const in float blinnShininessExponent, const in int maxMIPLevel ) {
 
 		//float envMapWidth = pow( 2.0, maxMIPLevelScalar );
 		//float desiredMIPLevel = log2( envMapWidth * sqrt( 3.0 ) ) - 0.5 * log2( square( blinnShininessExponent ) + 1.0 );
@@ -234,7 +241,8 @@
 
 		reflectVec = inverseTransformDirection( reflectVec, viewMatrix );
 
-		float specularMIPLevel = getSpecularMIPLevel( blinnShininessExponent, maxMIPLevel );
+		float blinnRoughness = BlinnExponentToGGXRoughness( blinnShininessExponent );
+		float specularMIPLevel = getSpecularMIPLevel( blinnRoughness, maxMIPLevel + 1);
 
 		#ifdef ENVMAP_TYPE_CUBE
 
@@ -242,8 +250,7 @@
 
 			#ifdef TEXTURE_LOD_EXT
 
-				float mipLevel = ComputeCubemapMipFromRoughness(roughness, 9.0);
-				vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, mipLevel );
+				vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, specularMIPLevel );
 
 			#else
 
@@ -254,7 +261,7 @@
 		#elif defined( ENVMAP_TYPE_CUBE_UV )
 
 			vec3 queryReflectVec = flipNormal * vec3( flipEnvMap * reflectVec.x, reflectVec.yz );
-			vec4 envMapColor = textureCubeUV(queryReflectVec, BlinnExponentToGGXRoughness(blinnShininessExponent), 1024.0);
+			vec4 envMapColor = textureCubeUV(queryReflectVec, blinnRoughness, 1024.0);
 
 		#elif defined( ENVMAP_TYPE_EQUIREC )
 

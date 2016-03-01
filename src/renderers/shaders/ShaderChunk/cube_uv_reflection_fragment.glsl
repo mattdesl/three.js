@@ -1,22 +1,3 @@
-#if defined(ENVMAP_TYPE_CUBE_UV) || defined(ENVMAP_TYPE_CUBE)
-
-vec2 MipLevelInfo( vec3 vec, float textureSize, float roughnessLevel, float roughness ) {
-    float s = log2(textureSize*0.25) - 1.0;
-    float scale = pow(2.0, s - roughnessLevel);
-    float dxRoughness = dFdx(roughness);
-    float dyRoughness = dFdy(roughness);
-    vec3 dx = dFdx( vec * scale * dxRoughness );
-    vec3 dy = dFdy( vec * scale * dyRoughness );
-    float d = max( dot( dx, dx ), dot( dy, dy ) );
-    // Clamp the value to the max mip level counts. hard coded to 6 mips
-    float rangeClamp = pow(2.0, (6.0 - 1.0) * 2.0);
-    d = clamp(d, 1.0, rangeClamp);
-    float mipLevel = 0.5 * log2(d);
-    return vec2(floor(mipLevel), fract(mipLevel));
-}
-
-#endif
-
 #ifdef ENVMAP_TYPE_CUBE_UV
 
 int getFaceFromDirection(vec3 direction) {
@@ -35,6 +16,21 @@ int getFaceFromDirection(vec3 direction) {
             face = direction.y > 0.0 ? 1 : 4;
     }
     return face;
+}
+
+vec2 MipLevelInfo( vec3 vec, float textureSize, float roughnessLevel, float roughness ) {
+    float s = log2(textureSize*0.25) - 1.0;
+    float scale = pow(2.0, s - roughnessLevel);
+    float dxRoughness = dFdx(roughness);
+    float dyRoughness = dFdy(roughness);
+    vec3 dx = dFdx( vec * scale * dxRoughness );
+    vec3 dy = dFdy( vec * scale * dyRoughness );
+    float d = max( dot( dx, dx ), dot( dy, dy ) );
+    // Clamp the value to the max mip level counts. hard coded to 6 mips
+    float rangeClamp = pow(2.0, (6.0 - 1.0) * 2.0);
+    d = clamp(d, 1.0, rangeClamp);
+    float mipLevel = 0.5 * log2(d);
+    return vec2(floor(mipLevel), fract(mipLevel));
 }
 
 vec2 getCubeUV(vec3 direction, float roughnessLevel, float mipLevel, float textureSize) {

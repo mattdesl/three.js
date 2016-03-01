@@ -21,6 +21,12 @@ geometry.viewDir = normalize( vViewPosition );
 
 IncidentLight directLight;
 
+#if defined(ENVMAP_TYPE_CUBE)
+	int maxMipLevel_1 = 9;
+#elif defined(ENVMAP_TYPE_CUBE_UV)
+	int maxMipLevel_1 = 8;
+#endif
+
 #if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )
 
 	PointLight pointLight;
@@ -103,8 +109,8 @@ IncidentLight directLight;
 
 	#if defined( USE_ENVMAP ) && defined( STANDARD )
 
-		// TODO, replace 9 with the real maxMIPLevel
-	 	irradiance += getLightProbeIndirectIrradiance( /*lightProbe,*/ geometry, 9 );
+		// TODO, replace maxMipLevel_1 with the real maxMIPLevel
+	 	irradiance += getLightProbeIndirectIrradiance( /*lightProbe,*/ geometry, maxMipLevel_1 );
 
 	#endif
 
@@ -114,8 +120,8 @@ IncidentLight directLight;
 
 #if defined( USE_ENVMAP ) && defined( RE_IndirectSpecular )
 
-	// TODO, replace 9 with the real maxMIPLevel
-	vec3 radiance = getLightProbeIndirectRadiance( /*specularLightProbe,*/ geometry, Material_BlinnShininessExponent( material ), 9 );
+	// TODO, replace maxMipLevel_1 with the real maxMIPLevel
+	vec3 radiance = getLightProbeIndirectRadiance( /*specularLightProbe,*/ geometry, Material_BlinnShininessExponent( material ), maxMipLevel_1 );
 
 	RE_IndirectSpecular( radiance, geometry, material, reflectedLight );
 
