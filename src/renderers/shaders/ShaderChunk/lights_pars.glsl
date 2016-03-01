@@ -242,7 +242,11 @@
 
 			#ifdef TEXTURE_LOD_EXT
 
-				vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, specularMIPLevel );
+				float blinnRoughness = BlinnExponentToGGXRoughness(blinnShininessExponent);
+				vec2 mipInfo_1 = MipLevelInfo(queryReflectVec, 256.0, blinnRoughness * float(maxMIPLevel), blinnRoughness);
+				
+				// vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, floor(BlinnExponentToGGXRoughness(blinnShininessExponent) * float(maxMIPLevel)) );
+				vec4 envMapColor = textureCubeLodEXT( envMap, queryReflectVec, float(9) );
 
 			#else
 

@@ -3099,7 +3099,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	function uploadTexture( textureProperties, texture, slot ) {
 
-		if ( texture.image ) {
+		if ( texture.image && texture.image.src ) {
 
 			console.log('Uplaoding texture', texture.image.src);
 
@@ -3185,7 +3185,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 				if ( texture.format !== THREE.RGBAFormat && texture.format !== THREE.RGBFormat ) {
 
 					if ( state.getCompressedTextureFormats().indexOf( glFormat ) > - 1 ) {
-						console.log("FORMAT",glFormat)
+
 						state.compressedTexImage2D( _gl.TEXTURE_2D, i, glFormat, mipmap.width, mipmap.height, 0, mipmap.data );
 
 					} else {

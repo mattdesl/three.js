@@ -108,7 +108,7 @@ IncidentLight directLight;
 
 	#endif
 
-	RE_IndirectDiffuse( irradiance, geometry, material, reflectedLight );
+	// RE_IndirectDiffuse( irradiance, geometry, material, reflectedLight );
 
 #endif
 
