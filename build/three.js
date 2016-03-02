@@ -25336,10 +25336,10 @@ THREE.WebGLRenderer = function ( parameters ) {
 				
 				
 				if ( feedbackBuffer ) {
-					_gl.bindBuffer( _gl.ARRAY_BUFFER, feedbackBuffer );
 
 					hasBuffers = true;
 					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
+					
 					_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, i, feedbackBuffer );
 
 				}
@@ -25374,8 +25374,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			_gl.endTransformFeedback();
 			_gl.disable( _gl.RASTERIZER_DISCARD );
-			// _gl.flush();
-			// _gl.finish();
 
 			if ( hasBuffers ) {
 
