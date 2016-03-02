@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>threejs webgl - materials - hdr environment mapping</title>
+		<title>threejs webgl - inline tone mapping</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -16,7 +16,8 @@
 				margin: 0px;
 				overflow: hidden;
 			}
-			a { color: #00f }
+
+			a { color: #222 }
 
 			#info {
 				position: absolute;
@@ -28,23 +29,23 @@
 	<body>
 
 		<div id="container"></div>
-		<div id="info"><a href="http://threejs.org" target="_blank">threejs</a> - High dynamic range (RGBE) Image-based Lighting (IBL)<br />using run-time generated pre-filtered roughness mipmaps (PMREM)<br/>
-			Created by Prashant Sharma and <a href="http://clara.io/" target="_blank">Ben Houston</a>.</div>
+		<div id="info"><a href="http://threejs.org" target="_blank">threejs</a> - Inline Tone Mapping (within a Material's fragment shader) without<br/>using a pre-processing step or float/half buffers by <a href="http://clara.io/" target="_blank">Ben Houston</a>.</div>
 
 		<script src="../build/three.min.js"></script>
 		<script src="../examples/js/controls/OrbitControls.js"></script>
 		<script src="../src/loaders/BinaryTextureLoader.js"></script>
-		<script src="../examples/js/loaders/RGBELoader.js"></script>
-		<script src="../examples/js/loaders/HDRCubeTextureLoader.js"></script>
 
 		<script src="../examples/js/Detector.js"></script>
 		<script src="../examples/js/libs/stats.min.js"></script>
 
+		<script src="../examples/js/libs/dat.gui.min.js"></script>
+		<script src="../src/loaders/BinaryTextureLoader.js"></script>
+		<script src="../examples/js/loaders/RGBELoader.js"></script>
+		<script src="../examples/js/loaders/HDRCubeTextureLoader.js"></script>
 		<script src="../examples/js/Half.js"></script>
 		<script src="../examples/js/Encodings.js"></script>
 		<script src="../examples/js/pmrem/PMREMGenerator.js"></script>
 		<script src="../examples/js/pmrem/PMREMCubeUVPacker.js"></script>
-		<script src="../examples/js/libs/dat.gui.min.js"></script>
 
 		<script src="../examples/js/postprocessing/EffectComposer.js"></script>
 		<script src="../examples/js/postprocessing/RenderPass.js"></script>
@@ -61,18 +62,26 @@
 
 			var container, stats;
 			var params = {
-				envMap: "HDR",
-				projection: 'normal',
+				opacity: 1.0,
 				roughness: 1.0,
-				bumpScale: 0.3,
-				background: false,
-				exposure: 1.0,
+				bumpScale: 1.0,
+				exposure: 3.0,
+				whitePoint: 5.0,
+				toneMapping: "Uncharted2",
+				renderMode: "Renderer"
 			};
+
+			var toneMappingOptions = {
+				None: THREE.NoToneMapping,
+				Linear: THREE.LinearToneMapping,
+				Reinhard: THREE.ReinhardToneMapping,
+				Uncharted2: THREE.Uncharted2ToneMapping,
+				Cineon: THREE.CineonToneMapping
+			};
+
 			var camera, scene, renderer, controls, objects = [];
-			var hdrCubeMap;
 			var composer;
-			var standardMaterial, floorMaterial;
-			var ldrCubeRenderTarget, hdrCubeRenderTarget, rgbmCubeRenderTarget;
+			var standardMaterial, standardMaterialPremultiplied, floorMaterial;
 
 			init();
 			animate();
@@ -89,15 +98,41 @@
 
 				renderer = new THREE.WebGLRenderer( { antialias: false } );
 				renderer.setClearColor( new THREE.Color( 0xffffff ) );
-				renderer.toneMapping = THREE.LinearToneMapping;
 
 				standardMaterial = new THREE.MeshStandardMaterial( {
-					map: null,
 					bumpScale: - 0.05,
 					color: 0xffffff,
 					metalness: 0.9,
-					roughness: 1.0,
-					shading: THREE.SmoothShading
+					roughness: 0.8,
+					shading: THREE.SmoothShading,
+					transparent: true,
+					blending: THREE.PremultipliedAlphaBlending
+				} );
+
+				var textureLoader = new THREE.TextureLoader();
+				textureLoader.load( "../examples/textures/brick_diffuse.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 9, 0.5 );
+					standardMaterial.map = map;
+					standardMaterial.needsUpdate = true;
+				} );
+				textureLoader.load( "../examples/textures/brick_bump.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 9, 0.5 );
+					standardMaterial.bumpMap = map;
+					standardMaterial.needsUpdate = true;
+				} );
+				textureLoader.load( "../examples/textures/brick_roughness.jpg", function( map ) {
+					map.wrapS = THREE.RepeatWrapping;
+					map.wrapT = THREE.RepeatWrapping;
+					map.anisotropy = 4;
+					map.repeat.set( 9, 0.5 );
+					standardMaterial.roughnessMap = map;
+					standardMaterial.needsUpdate = true;
 				} );
 
 				var geometry = new THREE.TorusKnotGeometry( 18, 8, 150, 20 );;
@@ -124,27 +159,16 @@
 				planeMesh1.receiveShadow = true;
 				scene.add( planeMesh1 );
 
-				var textureLoader = new THREE.TextureLoader();
-				textureLoader.load( "../examples/textures/roughness_map.jpg", function( map ) {
-					map.wrapS = THREE.RepeatWrapping;
-					map.wrapT = THREE.RepeatWrapping;
-					map.anisotropy = 4;
-					map.repeat.set( 9, 2 );
-					standardMaterial.roughnessMap = map;
-					standardMaterial.bumpMap = map;
-					standardMaterial.needsUpdate = true;
-				} );
+				// Materials
+				var hdrpath = "../examples/textures/cube/hdrPisa/";
+				var hdrformat = '.hdr';
+				var hdrurls = [
+					hdrpath + 'px' + hdrformat, hdrpath + 'nx' + hdrformat,
+					hdrpath + 'py' + hdrformat, hdrpath + 'ny' + hdrformat,
+					hdrpath + 'pz' + hdrformat, hdrpath + 'nz' + hdrformat
+				];
 
-				var genCubeUrls = function( prefix, postfix ) {
-					return [
-						prefix + 'px' + postfix, prefix + 'nx' + postfix,
-						prefix + 'py' + postfix, prefix + 'ny' + postfix,
-						prefix + 'pz' + postfix, prefix + 'nz' + postfix
-					];
-				};
-
-				var hdrUrls = genCubeUrls( "../examples/textures/cube/pisaHDR/", ".hdr" );
-				new THREE.HDRCubeTextureLoader().load( THREE.UnsignedByteType, hdrUrls, function ( hdrCubeMap ) {
+				var hdrCubeMap = new THREE.HDRCubeTextureLoader().load( THREE.UnsignedByteType, hdrurls, function ( hdrCubeMap ) {
 
 					var pmremGenerator = new THREE.PMREMGenerator( hdrCubeMap );
 					pmremGenerator.update( renderer );
@@ -152,39 +176,9 @@
 					var pmremCubeUVPacker = new THREE.PMREMCubeUVPacker( pmremGenerator.cubeLods );
 					pmremCubeUVPacker.update( renderer );
 
-					hdrCubeRenderTarget = pmremCubeUVPacker.CubeUVRenderTarget;
-
-					standardMaterial.envMap = hdrCubeRenderTarget;
+					standardMaterial.envMap = pmremCubeUVPacker.CubeUVRenderTarget;
 					standardMaterial.needsUpdate = true;
-				} );
 
-				var ldrUrls = genCubeUrls( "../examples/textures/cube/pisa/", ".png" );
-				new THREE.CubeTextureLoader().load( ldrUrls, function ( ldrCubeMap ) {
-
-					ldrCubeMap.encoding = THREE.GammaEncoding;
-
-					var pmremGenerator = new THREE.PMREMGenerator( ldrCubeMap );
-					pmremGenerator.update( renderer );
-
-					var pmremCubeUVPacker = new THREE.PMREMCubeUVPacker( pmremGenerator.cubeLods );
-					pmremCubeUVPacker.update( renderer );
-
-					ldrCubeRenderTarget = pmremCubeUVPacker.CubeUVRenderTarget;
-				} );
-
-
-				var rgbmUrls = genCubeUrls( "../examples/textures/cube/pisaRGBM16/", ".png" );
-				new THREE.CubeTextureLoader().load( rgbmUrls, function ( rgbmCubeMap ) {
-
-					rgbmCubeMap.encoding = THREE.RGBM16Encoding;
-
-					var pmremGenerator = new THREE.PMREMGenerator( rgbmCubeMap );
-					pmremGenerator.update( renderer );
-
-					var pmremCubeUVPacker = new THREE.PMREMCubeUVPacker( pmremGenerator.cubeLods );
-					pmremCubeUVPacker.update( renderer );
-
-					rgbmCubeRenderTarget = pmremCubeUVPacker.CubeUVRenderTarget;
 				} );
 
 				// Lights
@@ -230,10 +224,11 @@
 
 				var gui = new dat.GUI();
 
-				gui.add( params, 'envMap', [ 'LDR', 'HDR', 'RGBM16' ] );
-				gui.add( params, 'roughness', 0, 1 );
-				gui.add( params, 'bumpScale', - 1, 1 );
-				gui.add( params, 'exposure', 0.1, 2 );
+				gui.add( params, 'toneMapping', Object.keys( toneMappingOptions ) );
+				gui.add( params, 'exposure', 0, 10 );
+				gui.add( params, 'whitePoint', 0, 10 );
+				gui.add( params, 'opacity', 0, 1 );
+				gui.add( params, 'renderMode', [ 'Renderer', 'Composer'] );
 				gui.open();
 
 			}
@@ -266,17 +261,19 @@
 
 				if ( standardMaterial !== undefined ) {
 
+
 					standardMaterial.roughness = params.roughness;
 					standardMaterial.bumpScale = - 0.05 * params.bumpScale;
-					switch( params.envMap ) {
-						case 'LDR': standardMaterial.envMap = ldrCubeRenderTarget; break;
-						case 'HDR': standardMaterial.envMap = hdrCubeRenderTarget; break;
-						case 'RGBM16': standardMaterial.envMap = rgbmCubeRenderTarget; break;
-					}
+					standardMaterial.opacity = params.opacity;
 
 				}
-
+				if( renderer.toneMapping !== toneMappingOptions[ params.toneMapping ] ) {
+					renderer.toneMapping = toneMappingOptions[ params.toneMapping ];
+					if( standardMaterial ) standardMaterial.needsUpdate = true;
+					if( floorMaterial ) floorMaterial.needsUpdate = true;
+				}
 				renderer.toneMappingExposure = params.exposure;
+				renderer.toneMappingWhitePoint = params.whitePoint;
 
 				var timer = Date.now() * 0.00025;
 
@@ -289,7 +286,12 @@
 
 				}
 
-				composer.render();
+				if( params.renderMode === "Composer" ) {
+					composer.render();
+				}
+				else {
+					renderer.render( scene, camera );
+				}
 
 			}
 
