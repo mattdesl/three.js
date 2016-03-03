@@ -182,7 +182,7 @@
 		#elif defined( ENVMAP_TYPE_CUBE_UV )
 
 				vec3 queryVec = flipNormal * vec3( flipEnvMap * worldNormal.x, worldNormal.yz );
-				vec4 envMapColor = textureCubeUV(queryVec, 1.0, 1024.0);
+				vec4 envMapColor = textureCubeUV(queryVec, 1.0);
 
 		#else
 
@@ -261,7 +261,7 @@
 		#elif defined( ENVMAP_TYPE_CUBE_UV )
 
 			vec3 queryReflectVec = flipNormal * vec3( flipEnvMap * reflectVec.x, reflectVec.yz );
-			vec4 envMapColor = textureCubeUV(queryReflectVec, blinnRoughness, 1024.0);
+			vec4 envMapColor = textureCubeUV(queryReflectVec, blinnRoughness);
 
 		#elif defined( ENVMAP_TYPE_EQUIREC )
 
