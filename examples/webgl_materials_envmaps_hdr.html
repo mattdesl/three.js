@@ -89,7 +89,7 @@
 
 				renderer = new THREE.WebGLRenderer( { antialias: false } );
 				renderer.setClearColor( new THREE.Color( 0xffffff ) );
-				renderer.toneMapping = THREE.CineonToneMapping;
+				renderer.toneMapping = THREE.LinearToneMapping;
 
 				standardMaterial = new THREE.MeshStandardMaterial( {
 					map: null,
