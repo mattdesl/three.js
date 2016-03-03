@@ -23,11 +23,12 @@ THREE.HDRCubeTextureLoader.prototype.load = function(type, urls, onLoad, onProgr
   texture.anisotropy = 0;
 
   var scope = this.hdrLoader;
+  var manager = this.manager;
 
   var loaded = 0;
 
   function loadHDRData(i, onLoad, onProgress, onError) {
-    var loader = new THREE.XHRLoader( this.manager );
+    var loader = new THREE.XHRLoader( manager );
     loader.setResponseType( 'arraybuffer' );
 
     loader.load( urls[i], function ( buffer ) {
