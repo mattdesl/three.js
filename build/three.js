@@ -19090,9 +19090,10 @@ THREE.ObjectLoader.prototype = {
 						break;
 
 					case 'BoxGeometry':
+					case 'BoxBufferGeometry':
 					case 'CubeGeometry': // backwards compatible
 
-						geometry = new THREE.BoxGeometry(
+						geometry = new THREE[ data.type ](
 							data.width,
 							data.height,
 							data.depth,
@@ -19103,20 +19104,10 @@ THREE.ObjectLoader.prototype = {
 
 						break;
 
+					case 'CircleGeometry':
 					case 'CircleBufferGeometry':
 
-						geometry = new THREE.CircleBufferGeometry(
-							data.radius,
-							data.segments,
-							data.thetaStart,
-							data.thetaLength
-						);
-
-						break;
-
-					case 'CircleGeometry':
-
-						geometry = new THREE.CircleGeometry(
+						geometry = new THREE[ data.type ](
 							data.radius,
 							data.segments,
 							data.thetaStart,
@@ -19126,8 +19117,9 @@ THREE.ObjectLoader.prototype = {
 						break;
 
 					case 'CylinderGeometry':
+					case 'CylinderBufferGeometry':
 
-						geometry = new THREE.CylinderGeometry(
+						geometry = new THREE[ data.type ](
 							data.radiusTop,
 							data.radiusBottom,
 							data.height,
@@ -19141,22 +19133,9 @@ THREE.ObjectLoader.prototype = {
 						break;
 
 					case 'SphereGeometry':
-
-						geometry = new THREE.SphereGeometry(
-							data.radius,
-							data.widthSegments,
-							data.heightSegments,
-							data.phiStart,
-							data.phiLength,
-							data.thetaStart,
-							data.thetaLength
-						);
-
-						break;
-
 					case 'SphereBufferGeometry':
 
-						geometry = new THREE.SphereBufferGeometry(
+						geometry = new THREE[ data.type ](
 							data.radius,
 							data.widthSegments,
 							data.heightSegments,
@@ -19218,8 +19197,9 @@ THREE.ObjectLoader.prototype = {
 						break;
 
 					case 'TorusGeometry':
+					case 'TorusBufferGeometry':
 
-						geometry = new THREE.TorusGeometry(
+						geometry = new THREE[ data.type ](
 							data.radius,
 							data.tube,
 							data.radialSegments,
@@ -19617,7 +19597,7 @@ THREE.ObjectLoader.prototype = {
 
 			return object;
 
-		}
+		};
 
 	}()
 
@@ -25312,68 +25292,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		var isTransformFeedback = false;
-		var hasBuffers = false;
+		if ( geometry instanceof THREE.InstancedBufferGeometry ) {
 
-		if ( _isWebGL2 && _transformFeedback && _transformFeedback.length > 0 ) {
+			if ( geometry.maxInstancedCount > 0 ) {
 
-			isTransformFeedback = true;
-			var materialProperties = properties.get( material );
-
-			if ( !materialProperties.__transformFeedback ) {
-
-				if ( !material.transformFeedback ) {
-					console.error('Requested transformFeedback but none set in current material.')
-				}
-
-				materialProperties.__transformFeedback = _gl.createTransformFeedback();
+				renderer.renderInstances( geometry, drawStart, drawCount );
 
 			}
-
-			var err;
-			_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, materialProperties.__transformFeedback );
-			
-			for ( var i = 0; i < _transformFeedback.length; i ++ ) {
-
-				var feedbackAttrib = _transformFeedback[ i ];
-				var feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
-
-				if ( !feedbackBuffer ) {
-
-					objects.updateAttribute( feedbackAttrib, _gl.ARRAY_BUFFER );
-					feedbackBuffer = objects.getAttributeBuffer( feedbackAttrib );
-
-				}
-				
-				
-				if ( feedbackBuffer ) {
-
-					hasBuffers = true;
-					_gl.bindBuffer( _gl.ARRAY_BUFFER, null );
-					
-					_gl.bindBufferBase( _gl.TRANSFORM_FEEDBACK_BUFFER, i, feedbackBuffer );
-
-				}
-
-			}
-
-			if ( hasBuffers ) {
-
-				_gl.enable( _gl.RASTERIZER_DISCARD );
-				_gl.beginTransformFeedback( _gl.POINTS );
-				// if ( (err = _gl.getError()) ) console.error("ERROR", err);
-
-			} else {
-
-				_gl.bindTransformFeedback( _gl.TRANSFORM_FEEDBACK, null );
-
-			}
-
-		}
-
-		if ( geometry instanceof THREE.InstancedBufferGeometry && geometry.maxInstancedCount > 0 ) {
-
-			renderer.renderInstances( geometry, drawStart, drawCount );
 
 		} else {
 
@@ -36132,7 +36057,7 @@ THREE.BoxBufferGeometry = function ( width, height, depth, widthSegments, height
 	var indexCount = ( vertexCount / 4 ) * 6;
 
 	// buffers
-	var indices = new ( vertexCount > 65535 ? Uint32Array : Uint16Array )( indexCount );
+	var indices = new ( indexCount > 65535 ? Uint32Array : Uint16Array )( indexCount );
 	var vertices = new Float32Array( vertexCount * 3 );
 	var normals = new Float32Array( vertexCount * 3 );
 	var uvs = new Float32Array( vertexCount * 2 );
@@ -38186,7 +38111,7 @@ THREE.TorusBufferGeometry = function ( radius, tube, radialSegments, tubularSegm
 	var indexCount = radialSegments * tubularSegments * 2 * 3;
 
 	// buffers
-	var indices = new ( vertexCount > 65535 ? Uint32Array : Uint16Array )( indexCount );
+	var indices = new ( indexCount > 65535 ? Uint32Array : Uint16Array )( indexCount );
 	var vertices = new Float32Array( vertexCount * 3 );
 	var normals = new Float32Array( vertexCount * 3 );
 	var uvs = new Float32Array( vertexCount * 2 );
