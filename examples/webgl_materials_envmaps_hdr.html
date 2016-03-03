@@ -144,7 +144,7 @@
 				};
 
 				var hdrUrls = genCubeUrls( "../examples/textures/cube/pisaHDR/", ".hdr" );
-				new THREE.HDRCubeTextureLoader().load( THREE.UnsignedByteType, hdrUrls, function ( hdrCubeMap ) {
+				new THREE.HDRCubeTextureLoader().load( THREE.FloatType, hdrUrls, function ( hdrCubeMap ) {
 
 					var pmremGenerator = new THREE.PMREMGenerator( hdrCubeMap );
 					pmremGenerator.update( renderer );
@@ -285,7 +285,7 @@
 				for ( var i = 0, l = objects.length; i < l; i ++ ) {
 
 					var object = objects[ i ];
-					object.rotation.y += 0.005;
+					// object.rotation.y += 0.005;
 
 				}
 
