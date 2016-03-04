@@ -3066,11 +3066,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	function getTextureInternalFormat ( texture ) {
 
-		// if ( texture.format === THREE.DepthFormat ) {
+		if ( _isWebGL2 && texture.format === THREE.DepthFormat ) {
 
-		// 	return _gl.DEPTH_COMPONENT16;
+			return _gl.DEPTH_COMPONENT16;
 
-		// }
+		}
 
 		if ( isSRGBTexture( texture ) ) {
 
