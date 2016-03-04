@@ -27417,7 +27417,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( _isWebGL2 && texture.format === THREE.DepthFormat ) {
 
-			return _gl.DEPTH_COMPONENT16;
+			if ( texture.type === THREE.FloatType ) return _gl.DEPTH_COMPONENT32F;
+			else return _gl.DEPTH_COMPONENT16;
 
 		}
 
