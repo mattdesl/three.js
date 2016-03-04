@@ -27895,10 +27895,18 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( renderTarget.depthBuffer && ! renderTarget.stencilBuffer ) {
 
+			var internalDepthFormat = _gl.DEPTH_COMPONENT16;
+
+			if ( renderTarget.depthTexture && renderTarget.depthTexture.type === THREE.FloatType ) {
+
+				internalDepthFormat = _gl.DEPTH_COMPONENT32F;
+
+			}
+
 			if ( samples ) {
-				_gl.renderbufferStorageMultisample( _gl.RENDERBUFFER, samples, _gl.DEPTH_COMPONENT16, renderTarget.width, renderTarget.height );
+				_gl.renderbufferStorageMultisample( _gl.RENDERBUFFER, samples, internalDepthFormat, renderTarget.width, renderTarget.height );
 			} else {
-				_gl.renderbufferStorage( _gl.RENDERBUFFER, _gl.DEPTH_COMPONENT16, renderTarget.width, renderTarget.height );
+				_gl.renderbufferStorage( _gl.RENDERBUFFER, internalDepthFormat, renderTarget.width, renderTarget.height );
 			}
 			_gl.framebufferRenderbuffer( _gl.FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.RENDERBUFFER, renderbuffer );
 
