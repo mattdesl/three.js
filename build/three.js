@@ -25700,9 +25700,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 				if ( renderTarget.depthBuffer ) mask |= _gl.DEPTH_BUFFER_BIT;
 				if ( renderTarget.stencilBuffer ) mask |= _gl.STENCIL_BUFFER_BIT;
 				_gl.blitFramebuffer( 0, 0, width, height, 0, 0, width, height, mask, _gl.NEAREST );
-				if ((err = _gl.getError())) {
-					console.error("GL ERROR with depth!", err)
-				}
 			}
 
 		}
