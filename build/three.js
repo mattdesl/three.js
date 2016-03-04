@@ -275,6 +275,7 @@ THREE.LuminanceFormat = 1022;
 THREE.LuminanceAlphaFormat = 1023;
 // THREE.RGBEFormat handled as THREE.RGBAFormat in shaders
 THREE.RGBEFormat = THREE.RGBAFormat; //1024;
+THREE.DepthFormat = 1026;
 
 // DDS / ST3C Compressed texture formats
 
@@ -24568,6 +24569,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	extensions.get( 'ANGLE_instanced_arrays' );
 	extensions.get( 'WEBGL_color_buffer_float' );
 	extensions.get( 'EXT_color_buffer_half_float' );
+	extensions.get( 'WEBKIT_WEBGL_depth_texture' );
 
 	if ( extensions.get( 'OES_element_index_uint' ) ) {
 
@@ -24938,6 +24940,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 			return;
 		}
 
+		if ( renderTarget.depthTexture ) {
+
+			renderTarget.depthTexture.dispose();
+
+		}
+
 		if ( textureProperties.__webglTexture ) {
 
 			_gl.deleteTexture( textureProperties.__webglTexture );
@@ -24960,14 +24968,14 @@ THREE.WebGLRenderer = function ( parameters ) {
 			for ( var i = 0; i < 6; i ++ ) {
 
 				_gl.deleteFramebuffer( renderTargetProperties.__webglFramebuffer[ i ] );
-				_gl.deleteRenderbuffer( renderTargetProperties.__webglDepthbuffer[ i ] );
+				if ( renderTargetProperties.__webglDepthbuffer ) _gl.deleteRenderbuffer( renderTargetProperties.__webglDepthbuffer[ i ] );
 
 			}
 
 		} else {
 
 			_gl.deleteFramebuffer( renderTargetProperties.__webglFramebuffer );
-			_gl.deleteRenderbuffer( renderTargetProperties.__webglDepthbuffer );
+			if ( renderTargetProperties.__webglDepthbuffer ) _gl.deleteRenderbuffer( renderTargetProperties.__webglDepthbuffer );
 
 		}
 		
@@ -27407,6 +27415,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	function getTextureInternalFormat ( texture ) {
 
+		// if ( texture.format === THREE.DepthFormat ) {
+
+		// 	return _gl.DEPTH_COMPONENT16;
+
+		// }
+
 		if ( isSRGBTexture( texture ) ) {
 
 			if ( _isWebGL2 ) {
@@ -27476,7 +27490,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		} else {
 
-			console.log('Uploading data texture');
+			console.log('Uploading data texture', _infoMemory.textures);
 
 		}
 
@@ -27916,26 +27930,51 @@ THREE.WebGLRenderer = function ( parameters ) {
 	function setupDepthRenderbuffer( renderTarget, samples, internalColorFormat ) {
 
 		var renderTargetProperties = properties.get( renderTarget );
-
 		var isCube = ( renderTarget instanceof THREE.WebGLRenderTargetCube );
 
-		if ( isCube ) {
+		if ( renderTarget.depthTexture ) {
 
-			renderTargetProperties.__webglDepthbuffer = [];
+			if ( isCube ) throw new Error('Depth Texture with cube render targets is not supported!');
+			if ( samples > 0 ) throw new Error('Multisample Renderbuffer must have 0 samples');
 
-			for ( var i = 0; i < 6; i ++ ) {
+			_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer );
 
-				_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer[ i ] );
-				renderTargetProperties.__webglDepthbuffer[ i ] = _gl.createRenderbuffer();
-				setupRenderBufferStorage( renderTargetProperties.__webglDepthbuffer[ i ], renderTarget, samples, internalColorFormat );
-
+			// upload an empty depth texture with framebuffer size
+			if ( !properties.get( renderTarget.depthTexture ).__webglTexture ||
+					renderTarget.depthTexture.image.width !== renderTarget.width ||
+					renderTarget.depthTexture.image.height !== renderTarget.height ) {
+				renderTarget.depthTexture.image.width = renderTarget.width;
+				renderTarget.depthTexture.image.height = renderTarget.height;
+				renderTarget.depthTexture.needsUpdate = true;
 			}
+
+			_this.setTexture( renderTarget.depthTexture, 0 );
+
+			// 
+			var webglDepthTexture = properties.get( renderTarget.depthTexture ).__webglTexture;
+			_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, webglDepthTexture, 0 );
 
 		} else {
 
-			_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer );
-			renderTargetProperties.__webglDepthbuffer = _gl.createRenderbuffer();
-			setupRenderBufferStorage( renderTargetProperties.__webglDepthbuffer, renderTarget, samples, internalColorFormat );
+			if ( isCube ) {
+
+				renderTargetProperties.__webglDepthbuffer = [];
+
+				for ( var i = 0; i < 6; i ++ ) {
+
+					_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer[ i ] );
+					renderTargetProperties.__webglDepthbuffer[ i ] = _gl.createRenderbuffer();
+					setupRenderBufferStorage( renderTargetProperties.__webglDepthbuffer[ i ], renderTarget, samples, internalColorFormat );
+
+				}
+
+			} else {
+
+				_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer );
+				renderTargetProperties.__webglDepthbuffer = _gl.createRenderbuffer();
+				setupRenderBufferStorage( renderTargetProperties.__webglDepthbuffer, renderTarget, samples, internalColorFormat );
+
+			}
 
 		}
 
@@ -28367,6 +28406,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( p === THREE.RGBAFormat ) return _gl.RGBA;
 		if ( p === THREE.LuminanceFormat ) return _gl.LUMINANCE;
 		if ( p === THREE.LuminanceAlphaFormat ) return _gl.LUMINANCE_ALPHA;
+		if ( p === THREE.DepthFormat ) return _gl.DEPTH_COMPONENT;
 
 		if ( p === THREE.AddEquation ) return _gl.FUNC_ADD;
 		if ( p === THREE.SubtractEquation ) return _gl.FUNC_SUBTRACT;
