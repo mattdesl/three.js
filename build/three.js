@@ -24353,6 +24353,7 @@ THREE.ShaderLib = {
  * @author alteredq / http://alteredqualia.com/
  * @author szimek / https://github.com/szimek/
  */
+var err, reported;
 
 THREE.WebGLRenderer = function ( parameters ) {
 
@@ -25351,7 +25352,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 				_gl.enable( _gl.RASTERIZER_DISCARD );
 				_gl.beginTransformFeedback( _gl.POINTS );
-				// if ( (err = _gl.getError()) ) console.error("ERROR", err);
 
 			} else {
 
@@ -25688,6 +25688,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 			if ( msaaSamples ) {
 
+				var err;
+				// if ((err = _gl.getError())) console.error("GL ERROR before depth!", err)
 				var renderTargetProperties = properties.get( renderTarget );
 				_gl.bindFramebuffer( _gl.READ_FRAMEBUFFER, renderTargetProperties.__webglMSAAFramebuffer );
 				_gl.bindFramebuffer( _gl.DRAW_FRAMEBUFFER, renderTargetProperties.__webglFramebuffer );
@@ -25698,7 +25700,9 @@ THREE.WebGLRenderer = function ( parameters ) {
 				if ( renderTarget.depthBuffer ) mask |= _gl.DEPTH_BUFFER_BIT;
 				if ( renderTarget.stencilBuffer ) mask |= _gl.STENCIL_BUFFER_BIT;
 				_gl.blitFramebuffer( 0, 0, width, height, 0, 0, width, height, mask, _gl.NEAREST );
-
+				if ((err = _gl.getError())) {
+					console.error("GL ERROR with depth!", err)
+				}
 			}
 
 		}
@@ -27895,13 +27899,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( renderTarget.depthBuffer && ! renderTarget.stencilBuffer ) {
 
-			var internalDepthFormat = _gl.DEPTH_COMPONENT16;
-
-			if ( renderTarget.depthTexture && renderTarget.depthTexture.type === THREE.FloatType ) {
-
-				internalDepthFormat = _gl.DEPTH_COMPONENT32F;
-
-			}
+			var internalDepthFormat = renderTarget.depthTexture ? getTextureInternalFormat( renderTarget.depthTexture ) : _gl.DEPTH_COMPONENT16;
 
 			if ( samples ) {
 				_gl.renderbufferStorageMultisample( _gl.RENDERBUFFER, samples, internalDepthFormat, renderTarget.width, renderTarget.height );
@@ -27935,6 +27933,29 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function setupDepthTexture ( framebuffer, renderTarget ) {
+
+		var isCube = ( renderTarget instanceof THREE.WebGLRenderTargetCube );
+		if ( isCube ) throw new Error('Depth Texture with cube render targets is not supported!');
+
+		_gl.bindFramebuffer( _gl.FRAMEBUFFER, framebuffer );
+
+		// upload an empty depth texture with framebuffer size
+		if ( !properties.get( renderTarget.depthTexture ).__webglTexture ||
+				renderTarget.depthTexture.image.width !== renderTarget.width ||
+				renderTarget.depthTexture.image.height !== renderTarget.height ) {
+			renderTarget.depthTexture.image.width = renderTarget.width;
+			renderTarget.depthTexture.image.height = renderTarget.height;
+			renderTarget.depthTexture.needsUpdate = true;
+		}
+
+		_this.setTexture( renderTarget.depthTexture, 0 );
+
+		var webglDepthTexture = properties.get( renderTarget.depthTexture ).__webglTexture;
+		_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, webglDepthTexture, 0 );
+
+	}
+
 	// Setup GL resources for a non-texture depth buffer
 	function setupDepthRenderbuffer( renderTarget, samples, internalColorFormat ) {
 
@@ -27943,25 +27964,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( renderTarget.depthTexture ) {
 
-			if ( isCube ) throw new Error('Depth Texture with cube render targets is not supported!');
-			if ( samples > 0 ) throw new Error('Multisample Renderbuffer must have 0 samples');
-
-			_gl.bindFramebuffer( _gl.FRAMEBUFFER, renderTargetProperties.__webglFramebuffer );
-
-			// upload an empty depth texture with framebuffer size
-			if ( !properties.get( renderTarget.depthTexture ).__webglTexture ||
-					renderTarget.depthTexture.image.width !== renderTarget.width ||
-					renderTarget.depthTexture.image.height !== renderTarget.height ) {
-				renderTarget.depthTexture.image.width = renderTarget.width;
-				renderTarget.depthTexture.image.height = renderTarget.height;
-				renderTarget.depthTexture.needsUpdate = true;
-			}
-
-			_this.setTexture( renderTarget.depthTexture, 0 );
-
-			// 
-			var webglDepthTexture = properties.get( renderTarget.depthTexture ).__webglTexture;
-			_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, webglDepthTexture, 0 );
+			setupDepthTexture( renderTargetProperties.__webglFramebuffer, renderTarget );
 
 		} else {
 
