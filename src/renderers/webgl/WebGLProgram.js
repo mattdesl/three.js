@@ -482,6 +482,10 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' int;',
 
 				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
+				(renderer.isWebGL2 && material.layer)
+					? ('#define REPLACE_WITH_LAYER\n' +
+						'#define NEEDS_300_ES')
+					: '',
 
 				customDefines,
 
@@ -560,12 +564,32 @@ THREE.WebGLProgram = ( function () {
 		var vertexGlsl = prefixVertex + vertexShader;
 		var fragmentGlsl = prefixFragment + fragmentShader;
 
+		if (material.layer) {
+
+			var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
+			fragmentGlsl = fragmentGlsl.replace(/gl_FragColor/g, 'finalFragColor');
+			// fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
+
+		}
+
 		if (typeof renderer.transformGLSL === 'function') {
+
 			var result = renderer.transformGLSL(vertexGlsl, fragmentGlsl);
+
 			if (result) {
+
 				vertexGlsl = result.vertexShader;
 				fragmentGlsl = result.fragmentShader;
+
+				if (material.layer) {
+
+					var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
+					fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
+
+				}
+
 			}
+
 		}
 
 		// console.log( '*VERTEX*', vertexGlsl );

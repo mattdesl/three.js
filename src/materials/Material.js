@@ -31,7 +31,7 @@ THREE.Material = function () {
 	this.depthWrite = true;
 
 	this.colorWrite = true;
-
+	this.layer = 0;
 	this.precision = null; // override the renderer's default precision for this material
 
 	this.polygonOffset = false;
@@ -49,6 +49,7 @@ THREE.Material = function () {
 	this.gammaInput = undefined; // default to renderer values
 	this.gammaOutput = undefined;
 
+	this.renderPass = 0;
 	this.transformFeedback = null;
 
 };
@@ -275,6 +276,8 @@ THREE.Material.prototype = {
 		this.overdraw = source.overdraw;
 
 		this.visible = source.visible;
+		this.renderPass = source.renderPass;
+		this.layer = source.layer;
 
 		this.gammaInput = source.gammaInput;
 		this.gammaOutput = source.gammaOutput;

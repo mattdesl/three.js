@@ -19995,7 +19995,7 @@ THREE.Material = function () {
 	this.depthWrite = true;
 
 	this.colorWrite = true;
-
+	this.layer = 0;
 	this.precision = null; // override the renderer's default precision for this material
 
 	this.polygonOffset = false;
@@ -20013,6 +20013,7 @@ THREE.Material = function () {
 	this.gammaInput = undefined; // default to renderer values
 	this.gammaOutput = undefined;
 
+	this.renderPass = 0;
 	this.transformFeedback = null;
 
 };
@@ -20239,6 +20240,8 @@ THREE.Material.prototype = {
 		this.overdraw = source.overdraw;
 
 		this.visible = source.visible;
+		this.renderPass = source.renderPass;
+		this.layer = source.layer;
 
 		this.gammaInput = source.gammaInput;
 		this.gammaOutput = source.gammaOutput;
@@ -24398,6 +24401,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	// scene graph
 
 	this.sortObjects = true;
+	this.renderPass = undefined;
 
 	// physically based shading
 
@@ -25700,6 +25704,9 @@ THREE.WebGLRenderer = function ( parameters ) {
 				if ( renderTarget.depthBuffer ) mask |= _gl.DEPTH_BUFFER_BIT;
 				if ( renderTarget.stencilBuffer ) mask |= _gl.STENCIL_BUFFER_BIT;
 				_gl.blitFramebuffer( 0, 0, width, height, 0, 0, width, height, mask, _gl.NEAREST );
+				if ((err = _gl.getError())) {
+					console.error("GL ERROR with depth!", err)
+				}
 			}
 
 		}
@@ -25763,6 +25770,15 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function isMaterialVisible( material ) {
+
+		return material.visible === true && 
+			( typeof material.renderPass !== 'number'
+				|| typeof _this.renderPass !== 'number'
+				|| material.renderPass === _this.renderPass);
+
+	}
+
 	function projectObject( object, camera ) {
 
 		if ( object.visible === false ) return;
@@ -25808,7 +25824,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 					var material = object.material;
 
-					if ( material.visible === true ) {
+					if ( isMaterialVisible( material ) ) {
 
 						if ( _this.sortObjects === true ) {
 
@@ -25829,7 +25845,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 								var group = groups[ i ];
 								var groupMaterial = materials[ group.materialIndex ];
 
-								if ( groupMaterial.visible === true ) {
+								if ( isMaterialVisible( groupMaterial ) ) {
 
 									pushRenderItem( object, geometry, groupMaterial, _vector3.z, group );
 
@@ -29861,6 +29877,10 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' int;',
 
 				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
+				(renderer.isWebGL2 && material.layer)
+					? ('#define REPLACE_WITH_LAYER\n' +
+						'#define NEEDS_300_ES')
+					: '',
 
 				customDefines,
 
@@ -29939,12 +29959,32 @@ THREE.WebGLProgram = ( function () {
 		var vertexGlsl = prefixVertex + vertexShader;
 		var fragmentGlsl = prefixFragment + fragmentShader;
 
+		if (material.layer) {
+
+			var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
+			fragmentGlsl = fragmentGlsl.replace(/gl_FragColor/g, 'finalFragColor');
+			// fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
+
+		}
+
 		if (typeof renderer.transformGLSL === 'function') {
+
 			var result = renderer.transformGLSL(vertexGlsl, fragmentGlsl);
+
 			if (result) {
+
 				vertexGlsl = result.vertexShader;
 				fragmentGlsl = result.fragmentShader;
+
+				if (material.layer) {
+
+					var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
+					fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
+
+				}
+
 			}
+
 		}
 
 		// console.log( '*VERTEX*', vertexGlsl );

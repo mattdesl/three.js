@@ -49,6 +49,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	// scene graph
 
 	this.sortObjects = true;
+	this.renderPass = undefined;
 
 	// physically based shading
 
@@ -1351,6 +1352,9 @@ THREE.WebGLRenderer = function ( parameters ) {
 				if ( renderTarget.depthBuffer ) mask |= _gl.DEPTH_BUFFER_BIT;
 				if ( renderTarget.stencilBuffer ) mask |= _gl.STENCIL_BUFFER_BIT;
 				_gl.blitFramebuffer( 0, 0, width, height, 0, 0, width, height, mask, _gl.NEAREST );
+				if ((err = _gl.getError())) {
+					console.error("GL ERROR with depth!", err)
+				}
 			}
 
 		}
@@ -1414,6 +1418,15 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function isMaterialVisible( material ) {
+
+		return material.visible === true && 
+			( typeof material.renderPass !== 'number'
+				|| typeof _this.renderPass !== 'number'
+				|| material.renderPass === _this.renderPass);
+
+	}
+
 	function projectObject( object, camera ) {
 
 		if ( object.visible === false ) return;
@@ -1459,7 +1472,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 					var material = object.material;
 
-					if ( material.visible === true ) {
+					if ( isMaterialVisible( material ) ) {
 
 						if ( _this.sortObjects === true ) {
 
@@ -1480,7 +1493,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 								var group = groups[ i ];
 								var groupMaterial = materials[ group.materialIndex ];
 
-								if ( groupMaterial.visible === true ) {
+								if ( isMaterialVisible( groupMaterial ) ) {
 
 									pushRenderItem( object, geometry, groupMaterial, _vector3.z, group );
 
