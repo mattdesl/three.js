@@ -32,6 +32,7 @@ THREE.Material = function () {
 
 	this.colorWrite = true;
 	this.layer = 0;
+	this.projectedSort = false;
 	this.precision = null; // override the renderer's default precision for this material
 
 	this.polygonOffset = false;
@@ -278,6 +279,7 @@ THREE.Material.prototype = {
 		this.visible = source.visible;
 		this.renderPass = source.renderPass;
 		this.layer = source.layer;
+		this.projectedSort = source.projectedSort;
 
 		this.gammaInput = source.gammaInput;
 		this.gammaOutput = source.gammaOutput;

@@ -49,6 +49,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	// scene graph
 
 	this.sortObjects = true;
+	this.sortTransparentWithProjection = true;
 	this.renderPass = undefined;
 
 	// physically based shading
@@ -85,6 +86,9 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_currentMaterialId = - 1,
 	_currentGeometryProgram = '',
 	_currentCamera = null,
+	_currentProjectedCamera = null,
+	_projectedTempVector1 = new THREE.Vector3(),
+	_projectedTempVector2 = new THREE.Vector3(),
 
 	_transformFeedback = null,
 
@@ -1198,6 +1202,29 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function sortProjectedTransparent ( a, b ) {
+
+		if ( a.material.projectedSort && b.material.projectedSort 
+				&& a.object.visible && b.object.visible ) {
+
+			_projectedTempVector1.setFromMatrixPosition( _currentProjectedCamera.matrixWorld );
+
+			_projectedTempVector2.setFromMatrixPosition( a.object.matrixWorld );
+			var distA = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
+			
+			_projectedTempVector2.setFromMatrixPosition( b.object.matrixWorld );
+			var distB = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
+
+			return distB - distA;
+
+		} else {
+
+			return painterSortStable( a, b );
+
+		}
+
+	}
+
 	function reversePainterSortStable ( a, b ) {
 
 		if ( a.object.renderOrder !== b.object.renderOrder ) {
@@ -1261,7 +1288,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 		opaqueObjects.length = opaqueObjectsLastIndex + 1;
 		transparentObjects.length = transparentObjectsLastIndex + 1;
 
-		if ( _this.sortObjects === true ) {
+		if ( _this.sortTransparentWithProjection === true ) {
+
+			_currentProjectedCamera = camera;
+			transparentObjects.sort( sortProjectedTransparent );
+
+		} else if ( _this.sortObjects === true ) {
 
 			opaqueObjects.sort( painterSortStable );
 			transparentObjects.sort( reversePainterSortStable );
