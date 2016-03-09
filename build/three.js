@@ -24442,6 +24442,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_currentGeometryProgram = '',
 	_currentCamera = null,
 	_currentProjectedCamera = null,
+	_currentCameraZAxis = new THREE.Vector3(),
+	_projectedTempQuaternion = new THREE.Quaternion(),
 	_projectedTempVector1 = new THREE.Vector3(),
 	_projectedTempVector2 = new THREE.Vector3(),
 
@@ -25562,15 +25564,18 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( a.material.projectedSort && b.material.projectedSort 
 				&& a.object.visible && b.object.visible ) {
 
+			// z = dot( point - cameraPosition, cameraZAxis )
 			_projectedTempVector1.setFromMatrixPosition( _currentProjectedCamera.matrixWorld );
 
 			_projectedTempVector2.setFromMatrixPosition( a.object.matrixWorld );
-			var distA = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
+			var zA = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
+			// var distA = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
 			
 			_projectedTempVector2.setFromMatrixPosition( b.object.matrixWorld );
-			var distB = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
+			var zB = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
+			// var distB = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
 
-			return distB - distA;
+			return zB - zA;
 
 		} else {
 
@@ -25646,6 +25651,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( _this.sortTransparentWithProjection === true ) {
 
 			_currentProjectedCamera = camera;
+
+			// determine new camera Z axis
+			camera.getWorldQuaternion( _projectedTempQuaternion );
+			_currentCameraZAxis.set(0, 0, -1).applyQuaternion( _projectedTempQuaternion );
+
 			transparentObjects.sort( sortProjectedTransparent );
 
 		} else if ( _this.sortObjects === true ) {
