@@ -569,7 +569,6 @@ THREE.WebGLProgram = ( function () {
 
 			var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
 			fragmentGlsl = fragmentGlsl.replace(/gl_FragColor/g, 'finalFragColor');
-			// fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
 
 		}
 
