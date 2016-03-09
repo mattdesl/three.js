@@ -35,7 +35,7 @@ IncidentLight directLight;
 
 		pointLight = pointLights[ i ];
 
-		directLight = getPointDirectLight( pointLight, geometry );
+		directLight = getPointDirectLightIrradiance( pointLight, geometry );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( pointLight.shadow, directLight.visible ) ) ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowBias, pointLight.shadowRadius, vPointShadowCoord[ i ] ) : 1.0;
@@ -55,7 +55,7 @@ IncidentLight directLight;
 
 		spotLight = spotLights[ i ];
 
-		directLight = getSpotDirectLight( spotLight, geometry );
+		directLight = getSpotDirectLightIrradiance( spotLight, geometry );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( spotLight.shadow, directLight.visible ) ) ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowBias, spotLight.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;
@@ -75,7 +75,7 @@ IncidentLight directLight;
 
 		directionalLight = directionalLights[ i ];
 
-		directLight = getDirectionalDirectLight( directionalLight, geometry );
+		directLight = getDirectionalDirectLightIrradiance( directionalLight, geometry );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( directionalLight.shadow, directLight.visible ) ) ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowBias, directionalLight.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
@@ -93,7 +93,15 @@ IncidentLight directLight;
 
 	#ifdef USE_LIGHTMAP
 
-		irradiance += PI * texture2D( lightMap, vUv2 ).xyz * lightMapIntensity; // factor of PI should not be present; included here to prevent breakage
+		vec3 lightMapIrradiance = texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
+
+		#ifndef PHYSICALLY_CORRECT_LIGHTS
+
+			lightMapIrradiance *= PI; // factor of PI should not be present; included here to prevent breakage
+
+		#endif
+
+		irradiance += lightMapIrradiance;
 
 	#endif
 
