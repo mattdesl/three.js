@@ -361,6 +361,7 @@ THREE.WebGLProgram = ( function () {
 
 		var program = gl.createProgram();
 
+		var shaderName = (material.name || material.__webglShader.name);
 		var prefixVertex, prefixFragment;
 
 		if ( material instanceof THREE.RawShaderMaterial ) {
@@ -375,7 +376,7 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' float;',
 				'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
+				'#define SHADER_NAME ' + shaderName,
 
 				customDefines,
 
@@ -481,7 +482,7 @@ THREE.WebGLProgram = ( function () {
 				'precision ' + parameters.precision + ' float;',
 				'precision ' + parameters.precision + ' int;',
 
-				'#define SHADER_NAME ' + (material.name || material.__webglShader.name),
+				'#define SHADER_NAME ' + shaderName,
 				(renderer.isWebGL2 && material.layer)
 					? ('#define REPLACE_WITH_LAYER\n' +
 						'#define NEEDS_300_ES')
@@ -564,7 +565,7 @@ THREE.WebGLProgram = ( function () {
 		var vertexGlsl = prefixVertex + vertexShader;
 		var fragmentGlsl = prefixFragment + fragmentShader;
 
-		if (material.layer) {
+		if ( renderer.isWebGL2 && material.layer) {
 
 			var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
 			fragmentGlsl = fragmentGlsl.replace(/gl_FragColor/g, 'finalFragColor');
@@ -581,7 +582,7 @@ THREE.WebGLProgram = ( function () {
 				vertexGlsl = result.vertexShader;
 				fragmentGlsl = result.fragmentShader;
 
-				if (material.layer) {
+				if ( renderer.isWebGL2 && material.layer) {
 
 					var replacement = 'layout(location = ' + material.layer + ') out vec4 finalFragColor;\n';
 					fragmentGlsl = fragmentGlsl.replace('#define REPLACE_WITH_LAYER\n', replacement);
@@ -642,7 +643,8 @@ THREE.WebGLProgram = ( function () {
 
 		} else if ( programLog !== '' ) {
 
-			console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog()', programLog );
+			console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog() for', shaderName );
+			console.warn( programLog );
 
 		} else if ( vertexLog === '' || fragmentLog === '' ) {
 
