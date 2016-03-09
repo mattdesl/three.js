@@ -48,6 +48,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// scene graph
 
+	this.autoDestroyImages = false;
 	this.sortObjects = true;
 	this.sortTransparentWithProjection = true;
 	this.renderPass = undefined;
@@ -3248,6 +3249,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 					mipmap = mipmaps[ i ];
 					state.texImage2D( _gl.TEXTURE_2D, i, glInternalFormat, mipmap.width, mipmap.height, 0, glFormat, glType, mipmap.data );
+					if (_this.autoDestroyImages) mipmap.data = null;
 
 				}
 
@@ -3256,6 +3258,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			} else {
 
 				state.texImage2D( _gl.TEXTURE_2D, 0, glInternalFormat, image.width, image.height, 0, glFormat, glType, image.data );
+				if (_this.autoDestroyImages) image.data = null;
 
 			}
 
@@ -3270,6 +3273,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 					if ( state.getCompressedTextureFormats().indexOf( glFormat ) > - 1 ) {
 
 						state.compressedTexImage2D( _gl.TEXTURE_2D, i, glFormat, mipmap.width, mipmap.height, 0, mipmap.data );
+						if (_this.autoDestroyImages) mipmap.data = null;
 
 					} else {
 
@@ -3280,6 +3284,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 				} else {
 
 					state.texImage2D( _gl.TEXTURE_2D, i, glInternalFormat, mipmap.width, mipmap.height, 0, glFormat, glType, mipmap.data );
+					if (_this.autoDestroyImages) mipmap.data = null;
 
 				}
 
@@ -3298,6 +3303,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 					mipmap = mipmaps[ i ];
 					state.texImage3D( _gl.TEXTURE_3D, i, glInternalFormat, mipmap.width, mipmap.height, mipmap.depth, 0, glFormat, glType, mipmap.data );
+					if (_this.autoDestroyImages) mipmap.data = null;
 
 				}
 
@@ -3307,6 +3313,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 				// Chrome fails if internal format is RGB or RGBA
 				state.texImage3D( _gl.TEXTURE_3D, 0, glInternalFormat, image.width, image.height, image.depth, 0, _gl.RGB, glType, image.data );
+				if (_this.autoDestroyImages) image.data = null;
 
 			}
 		} else {
@@ -3323,6 +3330,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 					mipmap = mipmaps[ i ];
 					state.texImage2D( _gl.TEXTURE_2D, i, glInternalFormat, glFormat, glType, mipmap );
+					if (_this.autoDestroyImages) mipmap.data = null;
 
 				}
 
@@ -3331,6 +3339,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			} else {
 
 				state.texImage2D( _gl.TEXTURE_2D, 0, glInternalFormat, glFormat, glType, image );
+				if (_this.autoDestroyImages) image.data = null;
 
 			}
 
@@ -3504,10 +3513,12 @@ THREE.WebGLRenderer = function ( parameters ) {
 						if ( isDataTexture ) {
 
 							state.texImage2D( _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, cubeImage[ i ].width, cubeImage[ i ].height, 0, glFormat, glType, cubeImage[ i ].data );
+							if (_this.autoDestroyImages) cubeImage[ i ].data = null;
 
 						} else {
 
 							state.texImage2D( _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, glFormat, glType, cubeImage[ i ] );
+							if (_this.autoDestroyImages) cubeImage[ i ] = null;
 
 						}
 
@@ -3524,6 +3535,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 								if ( state.getCompressedTextureFormats().indexOf( glFormat ) > - 1 ) {
 
 									state.compressedTexImage2D( _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, j, glFormat, mipmap.width, mipmap.height, 0, mipmap.data );
+									if (_this.autoDestroyImages) mipmap.data = null;
 
 								} else {
 
@@ -3534,6 +3546,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 							} else {
 
 								state.texImage2D( _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, j, glInternalFormat, mipmap.width, mipmap.height, 0, glFormat, glType, mipmap.data );
+								if (_this.autoDestroyImages) mipmap.data = null;
 
 							}
 
