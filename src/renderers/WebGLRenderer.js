@@ -33,6 +33,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	var sprites = [];
 	var lensFlares = [];
+	var useSIMD = 'SIMD' in window;
 
 	// public properties
 
@@ -93,9 +94,14 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_currentCamera = null,
 	_currentProjectedCamera = null,
 	_currentCameraZAxis = new THREE.Vector3(),
+	_currentCameraZAxis32f = new Float32Array(4),
+	_currentCameraZAxisSIMD = null,
+	_dotTmp32f = new Float32Array(4),
 	_projectedTempQuaternion = new THREE.Quaternion(),
 	_projectedTempVector1 = new THREE.Vector3(),
 	_projectedTempVector2 = new THREE.Vector3(),
+	_projectedTempArray1 = new Float32Array(4),
+	_projectedTempArray2 = new Float32Array(4),
 
 	_transformFeedback = null,
 
@@ -1221,23 +1227,66 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function dotSIMD ( aSIMD, bSIMD ) {
+
+		// FloatIntrinsic lvMult = _mm_mult_ps( lLhs, lRhs );
+		// FloatIntrinsic lvTemp = _mm_shuffle_ps( lvMult, lvMult, _MM_SHUFFLE( 1, 0, 0, 0 ) );
+		// FloatIntrinsic lvTemp2 = _mm_shuffle_ps( lvMult, lvMult, _MM_SHUFFLE( 2, 0, 0, 0 ) );
+		// FloatIntrinsic lvSum = _mm_add_ps( lvMult, _mm_add_ps( lvTemp, lvTemp2 ) );
+		// return _mm_shuffle_ps( lvSum, lvSum, _MM_SHUFFLE( 0, 0, 0, 0 ) );
+
+		//  x1*x2 + y1*y2 + z1*z2
+		//  mult = [x1*x2, y1*y2, z1*z2]
+		//  a = 
+
+		//  dot([2,3,4], [2,1,4])
+		//  -> 4 + 3 + 16
+		//  -> 23
+		
+		// vers 1
+		// var multiplied = SIMD.Float32x4.mul( aSIMD, bSIMD ); // [ 4 3 16 0 ]
+		// var tmp1 = SIMD.Float32x4.shuffle( multiplied, multiplied, 1, 0, 0, 0 ); // [ 3 4 4 4 ]
+		// var tmp2 = SIMD.Float32x4.shuffle( multiplied, multiplied, 2, 0, 0, 0 ); // [ 16 4 4 4 ]
+		// var sum1 = SIMD.Float32x4.add( tmp1, tmp2 ) // [ 19 4 4 4 ]
+		// var sum2 = SIMD.Float32x4.add( multiplied, sum1 ); // [ 23 4 4 4 ]
+		// SIMD.Float32x4.store1( _dotTmp32f, 0, sum2 )
+		// return _dotTmp32f[0];
+		
+		// vers 2
+		var multiplied = SIMD.Float32x4.mul( aSIMD, bSIMD ); // [ 4 3 16 0 ]
+		SIMD.Float32x4.store3( _dotTmp32f, 0, multiplied )
+		return _dotTmp32f[0] + _dotTmp32f[1] + _dotTmp32f[2];
+	}
+
 	function sortProjectedTransparent ( a, b ) {
 
 		if ( a.material.projectedSort && b.material.projectedSort 
 				&& a.object.visible && b.object.visible ) {
 
-			// z = dot( point - cameraPosition, cameraZAxis )
-			_projectedTempVector1.setFromMatrixPosition( _currentProjectedCamera.matrixWorld );
+			if ( true ) {
 
-			_projectedTempVector2.setFromMatrixPosition( a.object.matrixWorld );
-			var zA = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
-			// var distA = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
-			
-			_projectedTempVector2.setFromMatrixPosition( b.object.matrixWorld );
-			var zB = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
-			// var distB = _projectedTempVector2.distanceToSquared( _projectedTempVector1 );
+				var matrixPositionOffset = 12;
+				var camWorldPos = SIMD.Float32x4.load3( _currentProjectedCamera.matrixWorld.elements, matrixPositionOffset );
+				var bWorldPos = SIMD.Float32x4.load3( b.object.matrixWorld.elements, matrixPositionOffset );
+				var aWorldPos = SIMD.Float32x4.load3( a.object.matrixWorld.elements, matrixPositionOffset );
+				
+				// dot(pos - camWorldPos, camZAxis)
+				var zA = dotSIMD( SIMD.Float32x4.sub( aWorldPos, camWorldPos ), _currentCameraZAxisSIMD );
+				var zB = dotSIMD( SIMD.Float32x4.sub( bWorldPos, camWorldPos ), _currentCameraZAxisSIMD );
+				return zB - zA;
+				
+			} else {
 
-			return zB - zA;
+				_projectedTempVector1.setFromMatrixPosition( _currentProjectedCamera.matrixWorld );
+
+				_projectedTempVector2.setFromMatrixPosition( a.object.matrixWorld );
+				var zA = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
+				
+				_projectedTempVector2.setFromMatrixPosition( b.object.matrixWorld );
+				var zB = _projectedTempVector2.sub( _projectedTempVector1 ).dot( _currentCameraZAxis );
+
+				return zB - zA;
+			}
 
 		} else {
 
@@ -1317,6 +1366,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 			// determine new camera Z axis
 			camera.getWorldQuaternion( _projectedTempQuaternion );
 			_currentCameraZAxis.set(0, 0, -1).applyQuaternion( _projectedTempQuaternion );
+
+			if ( useSIMD ) {
+
+				_currentCameraZAxis.toArray( _currentCameraZAxis32f );
+				_currentCameraZAxisSIMD = SIMD.Float32x4.load3( _currentCameraZAxis32f, 0 );
+
+			}
 
 			transparentObjects.sort( sortProjectedTransparent );
 
