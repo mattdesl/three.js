@@ -157,8 +157,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		pointShadowMatrix: [],
 		hemi: [],
 
-		shadows: [],
-		shadowsPointLight: 0
+		shadows: []
 
 	},
 
@@ -1155,8 +1154,19 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 						}
 
+						var type = _gl.FLOAT;
+						var normalized = false;
+						var array = geometryAttribute.array;
+
+						if ( array instanceof Uint8Array ) {
+
+							type = _gl.UNSIGNED_BYTE;
+							normalized = true;
+
+						}
+
 						_gl.bindBuffer( _gl.ARRAY_BUFFER, buffer );
-						_gl.vertexAttribPointer( programAttribute, size, _gl.FLOAT, false, 0, startIndex * size * 4 ); // 4 bytes per Float32
+						_gl.vertexAttribPointer( programAttribute, size, type, normalized, 0, startIndex * size * array.BYTES_PER_ELEMENT );
 
 					}
 
@@ -1383,11 +1393,13 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		setupLights( lights, camera );
-
 		//
 
+		setupShadows( lights );
+
 		shadowMap.render( scene, camera );
+
+		setupLights( lights, camera );
 
 		//
 
@@ -1855,7 +1867,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( material.transparent === true ) {
 
-			state.setBlending( material.blending, material.blendEquation, material.blendSrc, material.blendDst, material.blendEquationAlpha, material.blendSrcAlpha, material.blendDstAlpha );
+			state.setBlending( material.blending, material.blendEquation, material.blendSrc, material.blendDst, material.blendEquationAlpha, material.blendSrcAlpha, material.blendDstAlpha, material.premultipliedAlpha );
 
 		} else {
 
@@ -2552,13 +2564,33 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		} else if ( type === 'i' ) {
 
-			// single integer
+			// console.warn( 'THREE.WebGLRenderer: Uniform "i" is now "1i".' );
 			_gl.uniform1i( location, value );
 
 		} else if ( type === 'f' ) {
 
-			// single float
+			// console.warn( 'THREE.WebGLRenderer: Uniform "f" is now "1f".' );
 			_gl.uniform1f( location, value );
+
+		} else if ( type === 'iv1' ) {
+
+			// console.warn( 'THREE.WebGLRenderer: Uniform "iv1" is now "1iv".' );
+			_gl.uniform1iv( location, value );
+
+		} else if ( type === 'iv' ) {
+
+			// console.warn( 'THREE.WebGLRenderer: Uniform "iv" is now "3iv".' );
+			_gl.uniform3iv( location, value );
+
+		} else if ( type === 'fv1' ) {
+
+			// console.warn( 'THREE.WebGLRenderer: Uniform "fv1" is now "1fv".' );
+			_gl.uniform1fv( location, value );
+
+		} else if ( type === 'fv' ) {
+
+			// console.warn( 'THREE.WebGLRenderer: Uniform "fv" is now "3fv".' );
+			_gl.uniform3fv( location, value );
 
 		} else if ( type === 'v2' ) {
 
@@ -2615,26 +2647,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 				}
 
 			}
-
-		} else if ( type === 'iv1' ) {
-
-			// flat array of integers (JS or typed array)
-			_gl.uniform1iv( location, value );
-
-		} else if ( type === 'iv' ) {
-
-			// flat array of integers with 3 x N size (JS or typed array)
-			_gl.uniform3iv( location, value );
-
-		} else if ( type === 'fv1' ) {
-
-			// flat array of floats (JS or typed array)
-			_gl.uniform1fv( location, value );
-
-		} else if ( type === 'fv' ) {
-
-			// flat array of floats with 3 x N size (JS or typed array)
-			_gl.uniform3fv( location, value );
 
 		} else if ( type === 'v2v' ) {
 
@@ -2854,6 +2866,26 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	}
 
+	function setupShadows ( lights ) {
+
+		var lightShadowsLength = 0;
+
+		for ( var i = 0, l = lights.length; i < l; i ++ ) {
+
+			var light = lights[ i ];
+
+			if ( light.castShadow ) {
+
+				_lights.shadows[ lightShadowsLength ++ ] = light;
+
+			}
+
+		}
+
+		_lights.shadows.length = lightShadowsLength;
+
+	}
+
 	function setupLights ( lights, camera ) {
 
 		var l, ll, light,
@@ -2867,11 +2899,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		directionalLength = 0,
 		pointLength = 0,
 		spotLength = 0,
-		hemiLength = 0,
-
-		shadowsLength = 0;
-
-		_lights.shadowsPointLight = 0;
+		hemiLength = 0;
 
 		for ( l = 0, ll = lights.length; l < ll; l ++ ) {
 
@@ -2904,8 +2932,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 					uniforms.shadowBias = light.shadow.bias;
 					uniforms.shadowRadius = light.shadow.radius;
 					uniforms.shadowMapSize = light.shadow.mapSize;
-
-					_lights.shadows[ shadowsLength ++ ] = light;
 
 				}
 
@@ -2940,8 +2966,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 					uniforms.shadowRadius = light.shadow.radius;
 					uniforms.shadowMapSize = light.shadow.mapSize;
 
-					_lights.shadows[ shadowsLength ++ ] = light;
-
 				}
 
 				_lights.spotShadowMap[ spotLength ] = light.shadow.map;
@@ -2966,8 +2990,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 					uniforms.shadowBias = light.shadow.bias;
 					uniforms.shadowRadius = light.shadow.radius;
 					uniforms.shadowMapSize = light.shadow.mapSize;
-
-					_lights.shadows[ shadowsLength ++ ] = light;
 
 				}
 
@@ -3012,9 +3034,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		_lights.point.length = pointLength;
 		_lights.hemi.length = hemiLength;
 
-		_lights.shadows.length = shadowsLength;
-
-		_lights.hash = directionalLength + ',' + pointLength + ',' + spotLength + ',' + hemiLength + ',' + shadowsLength;
+		_lights.hash = directionalLength + ',' + pointLength + ',' + spotLength + ',' + hemiLength + ',' + _lights.shadows.length;
 
 	}
 
@@ -3996,7 +4016,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( isCube ) {
 
 			var textureProperties = properties.get( renderTarget.texture );
-			_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + renderTarget.activeCubeFace, textureProperties.__webglTexture, 0 );
+			_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + renderTarget.activeCubeFace, textureProperties.__webglTexture, renderTarget.activeMipMapLevel );
 
 		}
 
