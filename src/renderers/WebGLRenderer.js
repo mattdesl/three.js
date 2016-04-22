@@ -1592,7 +1592,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( programChange ) {
 
-			if ( parameters.shaderID ) {
+			if ( parameters.shaderID && !material.customShader ) {
 
 				var shader = THREE.ShaderLib[ parameters.shaderID ];
 

@@ -48,6 +48,7 @@ THREE.Material = function () {
 
 	this.visible = true;
 
+	this.customShader = false;
 	this._needsUpdate = true;
 
 };
@@ -293,6 +294,7 @@ THREE.Material.prototype = {
 		}
 
 		this.clippingPlanes = dstPlanes;
+		this.customShader = false;
 
 		return this;
 
