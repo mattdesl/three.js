@@ -1592,18 +1592,21 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		if ( programChange ) {
 
-			if ( parameters.shaderID && !material.customShader ) {
+			if ( parameters.shaderID ) {
 
 				var shader = THREE.ShaderLib[ parameters.shaderID ];
+				var shaderOverride = material.shaderOverride || {};
 
 				materialProperties.__webglShader = {
-					name: material.type,
-					uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
-					vertexShader: shader.vertexShader,
-					fragmentShader: shader.fragmentShader
+					name: shaderOverride.type || material.type,
+					uniforms: shaderOverride.uniforms || THREE.UniformsUtils.clone( shader.uniforms ),
+					vertexShader: shaderOverride.vertexShader || shader.vertexShader,
+					fragmentShader: shaderOverride.fragmentShader || shader.fragmentShader
 				};
 
 			} else {
+
+				var defaultShader = parameters.shaderID ? THREE.ShaderLib[ parameters.shaderID ] : null;
 
 				materialProperties.__webglShader = {
 					name: material.type,
@@ -3164,7 +3167,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			renderTarget.depthTexture.needsUpdate = true;
 		}
 
-		_this.setTexture( renderTarget.depthTexture, 0 );
+		_this.setTexture2D( renderTarget.depthTexture, 0 );
 
 		var webglDepthTexture = properties.get( renderTarget.depthTexture ).__webglTexture;
 		_gl.framebufferTexture2D( _gl.FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, webglDepthTexture, 0 );

@@ -475,6 +475,12 @@ THREE.WebGLProgram = ( function () {
 			vertexShader = unrollLoops( vertexShader );
 			fragmentShader = unrollLoops( fragmentShader );
 
+			if ( extensions && extensions.drawBuffers ) {
+
+				fragmentShader = fragmentShader.replace(/\bgl_FragColor\b/g, 'gl_FragData[0]');
+
+			}
+
 		}
 
 		var vertexGlsl = prefixVertex + vertexShader;
