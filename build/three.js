@@ -25746,7 +25746,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		if ( a.material.projectedSort && b.material.projectedSort 
 				&& a.object.visible && b.object.visible ) {
 
-			if ( true ) {
+			if ( useSIMD ) {
 
 				var matrixPositionOffset = 12;
 				var camWorldPos = SIMD.Float32x4.load3( _currentProjectedCamera.matrixWorld.elements, matrixPositionOffset );
@@ -26020,10 +26020,29 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	function isMaterialVisible( material ) {
 
-		return material.visible === true && 
-			( typeof material.renderPass !== 'number'
-				|| typeof _this.renderPass !== 'number'
-				|| material.renderPass === _this.renderPass);
+		if ( typeof _this.renderPass === 'number' ) {
+
+			if ( material instanceof THREE.MultiMaterial ) {
+
+				return material.visible === true;
+
+			} else {
+
+				return material.renderPass === _this.renderPass &&
+					material.visible === true;
+
+			}
+
+		} else {
+
+			return material.visible = true;
+
+		}
+
+		// return material.visible === true && 
+		// 	( typeof material.renderPass !== 'number'
+		// 		|| typeof _this.renderPass !== 'number'
+		// 		|| material.renderPass === _this.renderPass);
 
 	}
 
