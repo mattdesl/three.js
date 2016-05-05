@@ -35,7 +35,7 @@ IncidentLight directLight;
 
 		pointLight = pointLights[ i ];
 
-		directLight = getPointDirectLightIrradiance( pointLight, geometry );
+		getPointDirectLightIrradiance( pointLight, geometry, directLight );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( pointLight.shadow, directLight.visible ) ) ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowBias, pointLight.shadowRadius, vPointShadowCoord[ i ] ) : 1.0;
@@ -55,7 +55,7 @@ IncidentLight directLight;
 
 		spotLight = spotLights[ i ];
 
-		directLight = getSpotDirectLightIrradiance( spotLight, geometry );
+		getSpotDirectLightIrradiance( spotLight, geometry, directLight );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( spotLight.shadow, directLight.visible ) ) ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowBias, spotLight.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;
@@ -75,7 +75,7 @@ IncidentLight directLight;
 
 		directionalLight = directionalLights[ i ];
 
-		directLight = getDirectionalDirectLightIrradiance( directionalLight, geometry );
+		getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );
 
 		#ifdef USE_SHADOWMAP
 		directLight.color *= all( bvec2( directionalLight.shadow, directLight.visible ) ) ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowBias, directionalLight.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
@@ -115,7 +115,7 @@ IncidentLight directLight;
 
 	#endif
 
-	#if defined( USE_ENVMAP ) && defined( STANDARD )
+	#if defined( USE_ENVMAP ) && defined( PHYSICAL ) && defined( ENVMAP_TYPE_CUBE_UV )
 
 		// TODO, replace maxMipLevel_1 with the real maxMIPLevel
 	 	irradiance += getLightProbeIndirectIrradiance( /*lightProbe,*/ geometry, maxMipLevel_1 );
