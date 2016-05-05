@@ -28073,6 +28073,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 		return getGLSLEncoding(texture);
 	};
 
+
+	this.setCubeTexture = function ( cubeTexture, slot ) {
+		setCubeTexture( cubeTexture, slot );
+	};
+
 	//this.setTexture2D = setTexture2D;
 	this.setTexture2D = ( function() {
 
@@ -32204,6 +32209,7 @@ THREE.WebGLUniforms = ( function() { // scope
 
 				case 0x8b5e: return setValueT1; // SAMPLER_2D
 				case 0x8b60: return setValueT6; // SAMPLER_CUBE
+				case 0x8b5f: return setValueT1; // SAMPLER_3D
 
 				case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
 				case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
@@ -32311,6 +32317,7 @@ THREE.WebGLUniforms = ( function() { // scope
 
 				case 0x8b5e: return setValueT1a; // SAMPLER_2D
 				case 0x8b60: return setValueT6a; // SAMPLER_CUBE
+				case 0x8b5f: return setValueT1a; // SAMPLER_3D
 
 				case 0x1404: case 0x8b56: return setValue1iv; // INT, BOOL
 				case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
