@@ -3421,6 +3421,15 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	this.allocTextureUnit = allocTextureUnit;
 
+	this.getGLSLEncoding = function (texture) {
+		return getGLSLEncoding(texture);
+	};
+
+
+	this.setCubeTexture = function ( cubeTexture, slot ) {
+		setCubeTexture( cubeTexture, slot );
+	};
+
 	//this.setTexture2D = setTexture2D;
 	this.setTexture2D = ( function() {
 
