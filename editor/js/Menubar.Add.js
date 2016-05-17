@@ -198,13 +198,12 @@ Menubar.Add = function ( editor ) {
 
 		var radius = 2;
 		var tube = 0.8;
-		var radialSegments = 64;
-		var tubularSegments = 12;
+		var tubularSegments = 64;
+		var radialSegments = 12;
 		var p = 2;
 		var q = 3;
-		var heightScale = 1;
 
-		var geometry = new THREE.TorusKnotGeometry( radius, tube, radialSegments, tubularSegments, p, q, heightScale );
+		var geometry = new THREE.TorusKnotGeometry( radius, tube, tubularSegments, radialSegments, p, q );
 		var mesh = new THREE.Mesh( geometry, new THREE.MeshStandardMaterial() );
 		mesh.name = 'TorusKnot ' + ( ++ meshCount );
 
@@ -324,9 +323,9 @@ Menubar.Add = function ( editor ) {
 		var intensity = 1;
 		var distance = 0;
 		var angle = Math.PI * 0.1;
-		var exponent = 10;
+		var penumbra = 0;
 
-		var light = new THREE.SpotLight( color, intensity, distance, angle, exponent );
+		var light = new THREE.SpotLight( color, intensity, distance, angle, penumbra );
 		light.name = 'SpotLight ' + ( ++ lightCount );
 		light.target.name = 'SpotLight ' + ( lightCount ) + ' Target';
 

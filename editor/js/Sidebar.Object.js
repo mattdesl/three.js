@@ -224,15 +224,15 @@ Sidebar.Object = function ( editor ) {
 
 	container.add( objectAngleRow );
 
-	// exponent
+	// penumbra
 
-	var objectExponentRow = new UI.Row();
-	var objectExponent = new UI.Number().setRange( 0, Infinity ).onChange( update );
+	var objectPenumbraRow = new UI.Row();
+	var objectPenumbra = new UI.Number().setRange( 0, 1 ).onChange( update );
 
-	objectExponentRow.add( new UI.Text( 'Exponent' ).setWidth( '90px' ) );
-	objectExponentRow.add( objectExponent );
+	objectPenumbraRow.add( new UI.Text( 'Penumbra' ).setWidth( '90px' ) );
+	objectPenumbraRow.add( objectPenumbra );
 
-	container.add( objectExponentRow );
+	container.add( objectPenumbraRow );
 
 	// decay
 
@@ -444,9 +444,9 @@ Sidebar.Object = function ( editor ) {
 
 			}
 
-			if ( object.exponent !== undefined && Math.abs( object.exponent - objectExponent.getValue() ) >= 0.01 ) {
+			if ( object.penumbra !== undefined && Math.abs( object.penumbra - objectPenumbra.getValue() ) >= 0.01 ) {
 
-				editor.execute( new SetValueCommand( object, 'exponent', objectExponent.getValue() ) );
+				editor.execute( new SetValueCommand( object, 'penumbra', objectPenumbra.getValue() ) );
 
 			}
 
@@ -462,20 +462,16 @@ Sidebar.Object = function ( editor ) {
 
 			}
 
-			if ( object.castShadow !== objectCastShadow.getValue() ) {
+			if ( object.castShadow !== undefined && object.castShadow !== objectCastShadow.getValue() ) {
 
 				editor.execute( new SetValueCommand( object, 'castShadow', objectCastShadow.getValue() ) );
 
 			}
 
-			if ( object.receiveShadow !== undefined ) {
+			if ( object.receiveShadow !== undefined && object.receiveShadow !== objectReceiveShadow.getValue() ) {
 
-				if ( object.receiveShadow !== objectReceiveShadow.getValue() ) {
-
-					editor.execute( new SetValueCommand( object, 'receiveShadow', objectReceiveShadow.getValue() ) );
-					object.material.needsUpdate = true;
-
-				}
+				editor.execute( new SetValueCommand( object, 'receiveShadow', objectReceiveShadow.getValue() ) );
+				object.material.needsUpdate = true;
 
 			}
 
@@ -520,7 +516,7 @@ Sidebar.Object = function ( editor ) {
 			'groundColor': objectGroundColorRow,
 			'distance' : objectDistanceRow,
 			'angle' : objectAngleRow,
-			'exponent' : objectExponentRow,
+			'penumbra' : objectPenumbraRow,
 			'decay' : objectDecayRow,
 			'castShadow' : objectShadowRow,
 			'receiveShadow' : objectReceiveShadow,
@@ -679,9 +675,9 @@ Sidebar.Object = function ( editor ) {
 
 		}
 
-		if ( object.exponent !== undefined ) {
+		if ( object.penumbra !== undefined ) {
 
-			objectExponent.setValue( object.exponent );
+			objectPenumbra.setValue( object.penumbra );
 
 		}
 

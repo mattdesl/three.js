@@ -6,7 +6,6 @@ THREE.ShadowMaterial = function () {
 
 	THREE.ShaderMaterial.call( this, {
 		uniforms: THREE.UniformsUtils.merge( [
-			THREE.UniformsLib[ "ambient" ],
 			THREE.UniformsLib[ "lights" ],
 			{
 				opacity:  { type: 'f', value: 1.0 }
@@ -23,13 +22,14 @@ THREE.ShadowMaterial = function () {
 		].join( '\n' ),
 		fragmentShader: [
 			THREE.ShaderChunk[ "common" ],
+			THREE.ShaderChunk[ "packing" ],
 			THREE.ShaderChunk[ "bsdfs" ],
 			THREE.ShaderChunk[ "lights_pars" ],
 			THREE.ShaderChunk[ "shadowmap_pars_fragment" ],
 			THREE.ShaderChunk[ "shadowmask_pars_fragment" ],
 			"uniform float opacity;",
 			"void main() {",
-			"	gl_FragColor = vec4( 0.0, 0.0, 0.0, opacity - getShadowMask() );",
+			"	gl_FragColor = vec4( 0.0, 0.0, 0.0, opacity * ( 1.0  - getShadowMask() ) );",
 			"}"
 		].join( '\n' )
 	} );
