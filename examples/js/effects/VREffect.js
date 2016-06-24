@@ -59,9 +59,10 @@ THREE.VREffect = function ( renderer, onError ) {
 
 	//
 
+	this.isPresenting = false;
 	this.scale = 1;
 
-	var isPresenting = false;
+	var scope = this;
 
 	var rendererSize = renderer.getSize();
 	var rendererPixelRatio = renderer.getPixelRatio();
@@ -70,7 +71,7 @@ THREE.VREffect = function ( renderer, onError ) {
 
 		rendererSize = { width: width, height: height };
 
-		if ( isPresenting ) {
+		if ( scope.isPresenting ) {
 
 			var eyeParamsL = vrHMD.getEyeParameters( 'left' );
 			renderer.setPixelRatio( 1 );
@@ -98,20 +99,43 @@ THREE.VREffect = function ( renderer, onError ) {
 	// fullscreen
 
 	var canvas = renderer.domElement;
-	var fullscreenchange = canvas.mozRequestFullScreen ? 'mozfullscreenchange' : 'webkitfullscreenchange';
+	var requestFullscreen;
+	var exitFullscreen;
+	var fullscreenElement;
 
-	document.addEventListener( fullscreenchange, function () {
+	function onFullscreenChange () {
 
-		isPresenting = isDeprecatedAPI && vrHMD && ( document.mozFullScreenElement || document.webkitFullscreenElement ) !== undefined;
+		var wasPresenting = scope.isPresenting;
+		scope.isPresenting = vrHMD !== undefined && ( vrHMD.isPresenting || ( isDeprecatedAPI && document[ fullscreenElement ] instanceof window.HTMLElement ) );
 
-		if ( isPresenting ) {
+		if ( wasPresenting === scope.isPresenting ) {
+
+			return;
+
+		}
+
+		if ( scope.isPresenting ) {
 
 			rendererPixelRatio = renderer.getPixelRatio();
 			rendererSize = renderer.getSize();
 
 			var eyeParamsL = vrHMD.getEyeParameters( 'left' );
+			var eyeWidth, eyeHeight;
+
+			if ( isDeprecatedAPI ) {
+
+				eyeWidth = eyeParamsL.renderRect.width;
+				eyeHeight = eyeParamsL.renderRect.height;
+
+			} else {
+
+				eyeWidth = eyeParamsL.renderWidth;
+				eyeHeight = eyeParamsL.renderHeight;
+
+			}
+
 			renderer.setPixelRatio( 1 );
-			renderer.setSize( eyeParamsL.renderRect.width * 2, eyeParamsL.renderRect.height, false );
+			renderer.setSize( eyeWidth * 2, eyeHeight, false );
 
 		} else {
 
@@ -120,29 +144,32 @@ THREE.VREffect = function ( renderer, onError ) {
 
 		}
 
-	}, false );
+	}
 
-	window.addEventListener( 'vrdisplaypresentchange', function () {
+	if ( canvas.requestFullscreen ) {
 
-		isPresenting = vrHMD && vrHMD.isPresenting;
+		requestFullscreen = 'requestFullscreen';
+		fullscreenElement = 'fullscreenElement';
+		exitFullscreen = 'exitFullscreen';
+		document.addEventListener( 'fullscreenchange', onFullscreenChange, false );
 
-		if ( isPresenting ) {
+	} else if ( canvas.mozRequestFullScreen ) {
 
-			rendererPixelRatio = renderer.getPixelRatio();
-			rendererSize = renderer.getSize();
+		requestFullscreen = 'mozRequestFullScreen';
+		fullscreenElement = 'mozFullScreenElement';
+		exitFullscreen = 'mozCancelFullScreen';
+		document.addEventListener( 'mozfullscreenchange', onFullscreenChange, false );
 
-			var eyeParamsL = vrHMD.getEyeParameters( 'left' );
-			renderer.setPixelRatio( 1 );
-			renderer.setSize( eyeParamsL.renderWidth * 2, eyeParamsL.renderHeight, false );
+	} else {
 
-		} else {
+		requestFullscreen = 'webkitRequestFullscreen';
+		fullscreenElement = 'webkitFullscreenElement';
+		exitFullscreen = 'webkitExitFullscreen';
+		document.addEventListener( 'webkitfullscreenchange', onFullscreenChange, false );
 
-			renderer.setPixelRatio( rendererPixelRatio );
-			renderer.setSize( rendererSize.width, rendererSize.height );
+	}
 
-		}
-
-	}, false );
+	window.addEventListener( 'vrdisplaypresentchange', onFullscreenChange, false );
 
 	this.setFullScreen = function ( boolean ) {
 
@@ -154,7 +181,8 @@ THREE.VREffect = function ( renderer, onError ) {
 				return;
 
 			}
-			if ( isPresenting === boolean ) {
+
+			if ( scope.isPresenting === boolean ) {
 
 				resolve();
 				return;
@@ -175,14 +203,9 @@ THREE.VREffect = function ( renderer, onError ) {
 
 			} else {
 
-				if ( canvas.mozRequestFullScreen ) {
+				if ( canvas[ requestFullscreen ] ) {
 
-					canvas.mozRequestFullScreen( { vrDisplay: vrHMD } );
-					resolve();
-
-				} else if ( canvas.webkitRequestFullscreen ) {
-
-					canvas.webkitRequestFullscreen( { vrDisplay: vrHMD } );
+					canvas[ boolean ? requestFullscreen : exitFullscreen ]( { vrDisplay: vrHMD } );
 					resolve();
 
 				} else {
@@ -220,7 +243,7 @@ THREE.VREffect = function ( renderer, onError ) {
 
 	this.render = function ( scene, camera ) {
 
-		if ( vrHMD && isPresenting ) {
+		if ( vrHMD && scope.isPresenting ) {
 
 			var autoUpdate = scene.autoUpdate;
 

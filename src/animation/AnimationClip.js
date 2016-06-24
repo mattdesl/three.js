@@ -8,9 +8,11 @@
 
 THREE.AnimationClip = function ( name, duration, tracks ) {
 
-	this.name = name || THREE.Math.generateUUID();
+	this.name = name;
 	this.tracks = tracks;
 	this.duration = ( duration !== undefined ) ? duration : -1;
+
+	this.uuid = THREE.Math.generateUUID();
 
 	// this means it should figure out its duration by scanning the tracks
 	if ( this.duration < 0 ) {
@@ -160,7 +162,16 @@ Object.assign( THREE.AnimationClip, {
 
 	},
 
-	findByName: function( clipArray, name ) {
+	findByName: function( objectOrClipArray, name ) {
+
+		var clipArray = objectOrClipArray;
+
+		if ( ! Array.isArray( objectOrClipArray ) ) {
+
+			var o = objectOrClipArray;
+			clipArray = o.geometry && o.geometry.animations || o.animations;
+
+		}
 
 		for ( var i = 0; i < clipArray.length; i ++ ) {
 
@@ -266,7 +277,7 @@ Object.assign( THREE.AnimationClip, {
 			var animationKeys = hierarchyTracks[ h ].keys;
 
 			// skip empty tracks
-			if ( ! animationKeys || animationKeys.length == 0 ) continue;
+			if ( ! animationKeys || animationKeys.length === 0 ) continue;
 
 			// process morph targets in a way exactly compatible
 			// with AnimationHandler.init( animation )
@@ -301,7 +312,7 @@ Object.assign( THREE.AnimationClip, {
 						var animationKey = animationKeys[k];
 
 						times.push( animationKey.time );
-						values.push( ( animationKey.morphTarget === morphTargetName ) ? 1 : 0 )
+						values.push( ( animationKey.morphTarget === morphTargetName ) ? 1 : 0 );
 
 					}
 
@@ -346,4 +357,3 @@ Object.assign( THREE.AnimationClip, {
 	}
 
 } );
-
