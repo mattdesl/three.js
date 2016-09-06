@@ -90,7 +90,15 @@ THREE.WebGLObjects = function ( gl, properties, info ) {
 
 		gl.bindBuffer( bufferType, attributeProperties.__webglBuffer );
 
-		if ( data.dynamic === false || data.updateRange.count === - 1 ) {
+		if ( data.shouldCopyFullBuffer === true ) {
+
+			// User wishes to force a copy of full buffer instead of sub range
+
+			var usage = data.dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW;
+
+			gl.bufferData( bufferType, data.array, usage );
+
+		} else if ( data.dynamic === false || data.updateRange.count === - 1 ) {
 
 			// Not using update ranges
 

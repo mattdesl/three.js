@@ -9,6 +9,7 @@ THREE.InterleavedBufferAttribute = function ( interleavedBuffer, itemSize, offse
 	this.data = interleavedBuffer;
 	this.itemSize = itemSize;
 	this.offset = offset;
+	this.shouldCopyFullBuffer = false;
 
 };
 

@@ -11,6 +11,7 @@ THREE.BufferAttribute = function ( array, itemSize, normalized ) {
 
 	this.dynamic = false;
 	this.updateRange = { offset: 0, count: - 1 };
+	this.shouldCopyFullBuffer = false;
 
 	this.version = 0;
 	this.normalized = normalized === true;
@@ -47,6 +48,7 @@ THREE.BufferAttribute.prototype = {
 		this.itemSize = source.itemSize;
 
 		this.dynamic = source.dynamic;
+		this.shouldCopyFullBuffer = source.shouldCopyFullBuffer;
 
 		return this;
 
