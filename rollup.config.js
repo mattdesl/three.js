@@ -1,3 +1,9 @@
+import analyze from 'rollup-analyzer-plugin';
+
+const analyzeOpts = {
+	limit: 10, root: process.cwd()
+};
+
 function glsl() {
 
 	return {
@@ -25,9 +31,11 @@ function glsl() {
 
 export default {
 	input: 'src/Three.js',
+	entry: 'src/Three.js',
 	indent: '\t',
 	plugins: [
-		glsl()
+		glsl(),
+		analyze(analyzeOpts)
 	],
 	// sourceMap: true,
 	output: [
