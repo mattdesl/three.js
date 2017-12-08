@@ -25782,167 +25782,6 @@
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
-	function ImageLoader( manager ) {
-
-		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
-
-	}
-
-	Object.assign( ImageLoader.prototype, {
-
-		crossOrigin: 'Anonymous',
-
-		load: function ( url, onLoad, onProgress, onError ) {
-
-			if ( url === undefined ) url = '';
-
-			if ( this.path !== undefined ) url = this.path + url;
-
-			url = this.manager.resolveURL( url );
-
-			var scope = this;
-
-			var cached = Cache.get( url );
-
-			if ( cached !== undefined ) {
-
-				scope.manager.itemStart( url );
-
-				setTimeout( function () {
-
-					if ( onLoad ) onLoad( cached );
-
-					scope.manager.itemEnd( url );
-
-				}, 0 );
-
-				return cached;
-
-			}
-
-			var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
-
-			image.addEventListener( 'load', function () {
-
-				Cache.add( url, this );
-
-				if ( onLoad ) onLoad( this );
-
-				scope.manager.itemEnd( url );
-
-			}, false );
-
-			/*
-			image.addEventListener( 'progress', function ( event ) {
-
-				if ( onProgress ) onProgress( event );
-
-			}, false );
-			*/
-
-			image.addEventListener( 'error', function ( event ) {
-
-				if ( onError ) onError( event );
-
-				scope.manager.itemEnd( url );
-				scope.manager.itemError( url );
-
-			}, false );
-
-			if ( url.substr( 0, 5 ) !== 'data:' ) {
-
-				if ( this.crossOrigin !== undefined ) image.crossOrigin = this.crossOrigin;
-
-			}
-
-			scope.manager.itemStart( url );
-
-			image.src = url;
-
-			return image;
-
-		},
-
-		setCrossOrigin: function ( value ) {
-
-			this.crossOrigin = value;
-			return this;
-
-		},
-
-		setPath: function ( value ) {
-
-			this.path = value;
-			return this;
-
-		}
-
-	} );
-
-	/**
-	 * @author mrdoob / http://mrdoob.com/
-	 */
-
-	function TextureLoader( manager ) {
-
-		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
-
-	}
-
-	Object.assign( TextureLoader.prototype, {
-
-		crossOrigin: 'Anonymous',
-
-		load: function ( url, onLoad, onProgress, onError ) {
-
-			var texture = new Texture();
-
-			var loader = new ImageLoader( this.manager );
-			loader.setCrossOrigin( this.crossOrigin );
-			loader.setPath( this.path );
-
-			loader.load( url, function ( image ) {
-
-				texture.image = image;
-
-				// JPEGs can't have an alpha channel, so memory can be saved by storing them as RGB.
-				var isJPEG = url.search( /\.(jpg|jpeg)$/ ) > 0 || url.search( /^data\:image\/jpeg/ ) === 0;
-
-				texture.format = isJPEG ? RGBFormat : RGBAFormat;
-				texture.needsUpdate = true;
-
-				if ( onLoad !== undefined ) {
-
-					onLoad( texture );
-
-				}
-
-			}, onProgress, onError );
-
-			return texture;
-
-		},
-
-		setCrossOrigin: function ( value ) {
-
-			this.crossOrigin = value;
-			return this;
-
-		},
-
-		setPath: function ( value ) {
-
-			this.path = value;
-			return this;
-
-		}
-
-	} );
-
-	/**
-	 * @author mrdoob / http://mrdoob.com/
-	 */
-
 	var loading = {};
 
 	function FileLoader( manager ) {
@@ -26240,6 +26079,255 @@
 		setRequestHeader: function ( value ) {
 
 			this.requestHeader = value;
+			return this;
+
+		}
+
+	} );
+
+	/**
+	 * @author Nikos M. / https://github.com/foo123/
+	 *
+	 * Abstract Base class to load generic binary textures formats (rgbe, hdr, ...)
+	 */
+
+	function DataTextureLoader( manager ) {
+
+		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
+
+		// override in sub classes
+		this._parser = null;
+
+	}
+
+	Object.assign( DataTextureLoader.prototype, {
+
+		load: function ( url, onLoad, onProgress, onError ) {
+
+			var scope = this;
+
+			var texture = new DataTexture();
+
+			var loader = new FileLoader( this.manager );
+			loader.setResponseType( 'arraybuffer' );
+
+			loader.load( url, function ( buffer ) {
+
+				var texData = scope._parser( buffer );
+
+				if ( ! texData ) return;
+
+				if ( undefined !== texData.image ) {
+
+					texture.image = texData.image;
+
+				} else if ( undefined !== texData.data ) {
+
+					texture.image.width = texData.width;
+					texture.image.height = texData.height;
+					texture.image.data = texData.data;
+
+				}
+
+				texture.wrapS = undefined !== texData.wrapS ? texData.wrapS : ClampToEdgeWrapping;
+				texture.wrapT = undefined !== texData.wrapT ? texData.wrapT : ClampToEdgeWrapping;
+
+				texture.magFilter = undefined !== texData.magFilter ? texData.magFilter : LinearFilter;
+				texture.minFilter = undefined !== texData.minFilter ? texData.minFilter : LinearMipMapLinearFilter;
+
+				texture.anisotropy = undefined !== texData.anisotropy ? texData.anisotropy : 1;
+
+				if ( undefined !== texData.format ) {
+
+					texture.format = texData.format;
+
+				}
+				if ( undefined !== texData.type ) {
+
+					texture.type = texData.type;
+
+				}
+
+				if ( undefined !== texData.mipmaps ) {
+
+					texture.mipmaps = texData.mipmaps;
+
+				}
+
+				if ( 1 === texData.mipmapCount ) {
+
+					texture.minFilter = LinearFilter;
+
+				}
+
+				texture.needsUpdate = true;
+
+				if ( onLoad ) onLoad( texture, texData );
+
+			}, onProgress, onError );
+
+
+			return texture;
+
+		}
+
+	} );
+
+	/**
+	 * @author mrdoob / http://mrdoob.com/
+	 */
+
+	function ImageLoader( manager ) {
+
+		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
+
+	}
+
+	Object.assign( ImageLoader.prototype, {
+
+		crossOrigin: 'Anonymous',
+
+		load: function ( url, onLoad, onProgress, onError ) {
+
+			if ( url === undefined ) url = '';
+
+			if ( this.path !== undefined ) url = this.path + url;
+
+			url = this.manager.resolveURL( url );
+
+			var scope = this;
+
+			var cached = Cache.get( url );
+
+			if ( cached !== undefined ) {
+
+				scope.manager.itemStart( url );
+
+				setTimeout( function () {
+
+					if ( onLoad ) onLoad( cached );
+
+					scope.manager.itemEnd( url );
+
+				}, 0 );
+
+				return cached;
+
+			}
+
+			var image = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'img' );
+
+			image.addEventListener( 'load', function () {
+
+				Cache.add( url, this );
+
+				if ( onLoad ) onLoad( this );
+
+				scope.manager.itemEnd( url );
+
+			}, false );
+
+			/*
+			image.addEventListener( 'progress', function ( event ) {
+
+				if ( onProgress ) onProgress( event );
+
+			}, false );
+			*/
+
+			image.addEventListener( 'error', function ( event ) {
+
+				if ( onError ) onError( event );
+
+				scope.manager.itemEnd( url );
+				scope.manager.itemError( url );
+
+			}, false );
+
+			if ( url.substr( 0, 5 ) !== 'data:' ) {
+
+				if ( this.crossOrigin !== undefined ) image.crossOrigin = this.crossOrigin;
+
+			}
+
+			scope.manager.itemStart( url );
+
+			image.src = url;
+
+			return image;
+
+		},
+
+		setCrossOrigin: function ( value ) {
+
+			this.crossOrigin = value;
+			return this;
+
+		},
+
+		setPath: function ( value ) {
+
+			this.path = value;
+			return this;
+
+		}
+
+	} );
+
+	/**
+	 * @author mrdoob / http://mrdoob.com/
+	 */
+
+	function TextureLoader( manager ) {
+
+		this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
+
+	}
+
+	Object.assign( TextureLoader.prototype, {
+
+		crossOrigin: 'Anonymous',
+
+		load: function ( url, onLoad, onProgress, onError ) {
+
+			var texture = new Texture();
+
+			var loader = new ImageLoader( this.manager );
+			loader.setCrossOrigin( this.crossOrigin );
+			loader.setPath( this.path );
+
+			loader.load( url, function ( image ) {
+
+				texture.image = image;
+
+				// JPEGs can't have an alpha channel, so memory can be saved by storing them as RGB.
+				var isJPEG = url.search( /\.(jpg|jpeg)$/ ) > 0 || url.search( /^data\:image\/jpeg/ ) === 0;
+
+				texture.format = isJPEG ? RGBFormat : RGBAFormat;
+				texture.needsUpdate = true;
+
+				if ( onLoad !== undefined ) {
+
+					onLoad( texture );
+
+				}
+
+			}, onProgress, onError );
+
+			return texture;
+
+		},
+
+		setCrossOrigin: function ( value ) {
+
+			this.crossOrigin = value;
+			return this;
+
+		},
+
+		setPath: function ( value ) {
+
+			this.path = value;
 			return this;
 
 		}
@@ -30371,7 +30459,9 @@
 	exports.Points = Points;
 	exports.Group = Group;
 	exports.DataTexture = DataTexture;
+	exports.CubeTexture = CubeTexture;
 	exports.Texture = Texture;
+	exports.DataTextureLoader = DataTextureLoader;
 	exports.TextureLoader = TextureLoader;
 	exports.DefaultLoadingManager = DefaultLoadingManager;
 	exports.LoadingManager = LoadingManager;
@@ -30431,6 +30521,7 @@
 	exports.IcosahedronGeometry = IcosahedronGeometry;
 	exports.SphereGeometry = SphereGeometry;
 	exports.SphereBufferGeometry = SphereBufferGeometry;
+	exports.PlaneGeometry = PlaneGeometry;
 	exports.PlaneBufferGeometry = PlaneBufferGeometry;
 	exports.ShadowMaterial = ShadowMaterial;
 	exports.SpriteMaterial = SpriteMaterial;
