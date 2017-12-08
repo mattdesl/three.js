@@ -9,7 +9,7 @@ export { IcosahedronGeometry, /* IcosahedronBufferGeometry */ } from './Icosahed
 // export { TorusKnotGeometry, TorusKnotBufferGeometry } from './TorusKnotGeometry.js';
 // export { TorusGeometry, TorusBufferGeometry } from './TorusGeometry.js';
 // export { TextGeometry, TextBufferGeometry } from './TextGeometry.js';
-// export { SphereGeometry, SphereBufferGeometry } from './SphereGeometry.js';
+export { SphereGeometry, SphereBufferGeometry } from './SphereGeometry.js';
 // export { RingGeometry, RingBufferGeometry } from './RingGeometry.js';
 export { /* PlaneGeometry, */ PlaneBufferGeometry } from './PlaneGeometry.js';
 // export { LatheGeometry, LatheBufferGeometry } from './LatheGeometry.js';
